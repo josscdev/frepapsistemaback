@@ -1,0 +1,44 @@
+# =========================
+# Archivos de usuario/IDE
+# =========================
+.vscode/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+.idea/
+*.sln.docstates
+
+# =========================
+# Build / binarios
+# =========================
+bin/
+obj/
+[Bb]uild/
+[Bb]ld/
+[Dd]ebug*/
+[Rr]elease*/
+x64/
+x86/
+*.log
+
+# =========================
+# Node / Angular
+# =========================
+node_modules/
+dist/
+.angular/cache/
+coverage/
+libpeerconnection.log
+npm-debug.log
+yarn-error.log
+
+# =========================
+# Secretos y configuración
+# =========================
+.env
+*.env
+appsettings.json
+appsettings.*.json
+RombiBack/appsettings.json
+RombiBack/appsettings.*.json

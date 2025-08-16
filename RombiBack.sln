@@ -1,0 +1,61 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34031.279
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RombiBack", "RombiBack\RombiBack.csproj", "{D281331D-CED0-4598-831B-F78791BD1725}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RombiBack.Entities", "RombiBack.Entities\RombiBack.Entities.csproj", "{8C7A0767-A9BD-447D-8B04-AE07C0D91480}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RombiBack.Repository", "RombiBack.Repository\RombiBack.Repository.csproj", "{7989E86D-DA5D-4DB1-BD36-9FCF32F9DCED}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RombiBack.Abstraction", "RombiBack.Abstraction\RombiBack.Abstraction.csproj", "{BB014E7F-79BB-4641-92D2-6DD1D2D772F3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RombiBack.Services", "RombiBack.Services\RombiBack.Services.csproj", "{63A8EBA3-AFC8-4410-8DE5-07D8A70C526D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RombiBack.AWS", "RombiBack.AWS\RombiBack.AWS.csproj", "{3F6F7AC4-4DA0-4EC8-A709-D4DAD2D58721}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RombiBack.Security", "RombiBack.Security\RombiBack.Security.csproj", "{4E85FD5D-268E-4D4B-93F0-2D0E1397D228}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D281331D-CED0-4598-831B-F78791BD1725}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D281331D-CED0-4598-831B-F78791BD1725}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D281331D-CED0-4598-831B-F78791BD1725}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D281331D-CED0-4598-831B-F78791BD1725}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C7A0767-A9BD-447D-8B04-AE07C0D91480}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C7A0767-A9BD-447D-8B04-AE07C0D91480}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C7A0767-A9BD-447D-8B04-AE07C0D91480}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C7A0767-A9BD-447D-8B04-AE07C0D91480}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7989E86D-DA5D-4DB1-BD36-9FCF32F9DCED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7989E86D-DA5D-4DB1-BD36-9FCF32F9DCED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7989E86D-DA5D-4DB1-BD36-9FCF32F9DCED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7989E86D-DA5D-4DB1-BD36-9FCF32F9DCED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB014E7F-79BB-4641-92D2-6DD1D2D772F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BB014E7F-79BB-4641-92D2-6DD1D2D772F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BB014E7F-79BB-4641-92D2-6DD1D2D772F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BB014E7F-79BB-4641-92D2-6DD1D2D772F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63A8EBA3-AFC8-4410-8DE5-07D8A70C526D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63A8EBA3-AFC8-4410-8DE5-07D8A70C526D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63A8EBA3-AFC8-4410-8DE5-07D8A70C526D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63A8EBA3-AFC8-4410-8DE5-07D8A70C526D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F6F7AC4-4DA0-4EC8-A709-D4DAD2D58721}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F6F7AC4-4DA0-4EC8-A709-D4DAD2D58721}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F6F7AC4-4DA0-4EC8-A709-D4DAD2D58721}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F6F7AC4-4DA0-4EC8-A709-D4DAD2D58721}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E85FD5D-268E-4D4B-93F0-2D0E1397D228}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E85FD5D-268E-4D4B-93F0-2D0E1397D228}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E85FD5D-268E-4D4B-93F0-2D0E1397D228}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E85FD5D-268E-4D4B-93F0-2D0E1397D228}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7C516B96-CB2A-4F3C-8080-5E85CBF2E624}
+	EndGlobalSection
+EndGlobal

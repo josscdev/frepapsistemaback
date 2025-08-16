@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="ROM\SEGURIDAD\MGM_Perfiles\**" />
+    <EmbeddedResource Remove="ROM\SEGURIDAD\MGM_Perfiles\**" />
+    <None Remove="ROM\SEGURIDAD\MGM_Perfiles\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RombiBack.Abstraction\RombiBack.Abstraction.csproj" />
+    <ProjectReference Include="..\RombiBack.Entities\RombiBack.Entities.csproj" />
+    <ProjectReference Include="..\RombiBack.Repository\RombiBack.Repository.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.15" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Scrutor" Version="4.2.2" />
+  </ItemGroup>
+
+</Project>

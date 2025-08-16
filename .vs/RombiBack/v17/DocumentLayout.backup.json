@@ -1,0 +1,105 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\TAWA_JOSS\\ROMBI\\ROMBIBACK\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{BB014E7F-79BB-4641-92D2-6DD1D2D772F3}|RombiBack.Abstraction\\RombiBack.Abstraction.csproj|d:\\tawa_joss\\rombi\\rombiback\\rombiback.abstraction\\dataacces.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BB014E7F-79BB-4641-92D2-6DD1D2D772F3}|RombiBack.Abstraction\\RombiBack.Abstraction.csproj|solutionrelative:rombiback.abstraction\\dataacces.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D281331D-CED0-4598-831B-F78791BD1725}|RombiBack\\RombiBack.csproj|d:\\tawa_joss\\rombi\\rombiback\\rombiback\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{D281331D-CED0-4598-831B-F78791BD1725}|RombiBack\\RombiBack.csproj|solutionrelative:rombiback\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D281331D-CED0-4598-831B-F78791BD1725}|RombiBack\\RombiBack.csproj|d:\\tawa_joss\\rombi\\rombiback\\rombiback\\controllers\\rom\\entel_retail\\mgm_planificacionhorarios\\planificacionhorarioscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D281331D-CED0-4598-831B-F78791BD1725}|RombiBack\\RombiBack.csproj|solutionrelative:rombiback\\controllers\\rom\\entel_retail\\mgm_planificacionhorarios\\planificacionhorarioscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D281331D-CED0-4598-831B-F78791BD1725}|RombiBack\\RombiBack.csproj|d:\\tawa_joss\\rombi\\rombiback\\rombiback\\controllers\\rom\\seguridad\\mgm_permisos\\permisoscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D281331D-CED0-4598-831B-F78791BD1725}|RombiBack\\RombiBack.csproj|solutionrelative:rombiback\\controllers\\rom\\seguridad\\mgm_permisos\\permisoscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8C7A0767-A9BD-447D-8B04-AE07C0D91480}|RombiBack.Entities\\RombiBack.Entities.csproj|d:\\tawa_joss\\rombi\\rombiback\\rombiback.entities\\rom\\seguridad\\models\\permisos\\usuario.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8C7A0767-A9BD-447D-8B04-AE07C0D91480}|RombiBack.Entities\\RombiBack.Entities.csproj|solutionrelative:rombiback.entities\\rom\\seguridad\\models\\permisos\\usuario.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "PermisosController.cs",
+              "DocumentMoniker": "D:\\TAWA_JOSS\\ROMBI\\ROMBIBACK\\RombiBack\\Controllers\\ROM\\SEGURIDAD\\MGM_Permisos\\PermisosController.cs",
+              "RelativeDocumentMoniker": "RombiBack\\Controllers\\ROM\\SEGURIDAD\\MGM_Permisos\\PermisosController.cs",
+              "ToolTip": "D:\\TAWA_JOSS\\ROMBI\\ROMBIBACK\\RombiBack\\Controllers\\ROM\\SEGURIDAD\\MGM_Permisos\\PermisosController.cs",
+              "RelativeToolTip": "RombiBack\\Controllers\\ROM\\SEGURIDAD\\MGM_Permisos\\PermisosController.cs",
+              "ViewState": "AgIAAE0AAAAAAAAAAAAmwF8AAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-05T05:47:43.482Z",
+              "IsPinned": true,
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "DataAcces.cs",
+              "DocumentMoniker": "D:\\TAWA_JOSS\\ROMBI\\ROMBIBACK\\RombiBack.Abstraction\\DataAcces.cs",
+              "RelativeDocumentMoniker": "RombiBack.Abstraction\\DataAcces.cs",
+              "ToolTip": "D:\\TAWA_JOSS\\ROMBI\\ROMBIBACK\\RombiBack.Abstraction\\DataAcces.cs",
+              "RelativeToolTip": "RombiBack.Abstraction\\DataAcces.cs",
+              "ViewState": "AgIAABAAAAAAAAAAAAAMwCMAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-12T16:17:07.728Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "D:\\TAWA_JOSS\\ROMBI\\ROMBIBACK\\RombiBack\\appsettings.json",
+              "RelativeDocumentMoniker": "RombiBack\\appsettings.json",
+              "ToolTip": "D:\\TAWA_JOSS\\ROMBI\\ROMBIBACK\\RombiBack\\appsettings.json",
+              "RelativeToolTip": "RombiBack\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-08-12T16:16:27.327Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "PlanificacionHorariosController.cs",
+              "DocumentMoniker": "D:\\TAWA_JOSS\\ROMBI\\ROMBIBACK\\RombiBack\\Controllers\\ROM\\ENTEL_RETAIL\\MGM_PlanificacionHorarios\\PlanificacionHorariosController.cs",
+              "RelativeDocumentMoniker": "RombiBack\\Controllers\\ROM\\ENTEL_RETAIL\\MGM_PlanificacionHorarios\\PlanificacionHorariosController.cs",
+              "ToolTip": "D:\\TAWA_JOSS\\ROMBI\\ROMBIBACK\\RombiBack\\Controllers\\ROM\\ENTEL_RETAIL\\MGM_PlanificacionHorarios\\PlanificacionHorariosController.cs",
+              "RelativeToolTip": "RombiBack\\Controllers\\ROM\\ENTEL_RETAIL\\MGM_PlanificacionHorarios\\PlanificacionHorariosController.cs",
+              "ViewState": "AgIAAKsAAAAAAAAAAAD4v7UAAABLAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-12T15:11:53.618Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Usuario.cs",
+              "DocumentMoniker": "D:\\TAWA_JOSS\\ROMBI\\ROMBIBACK\\RombiBack.Entities\\ROM\\SEGURIDAD\\Models\\Permisos\\Usuario.cs",
+              "RelativeDocumentMoniker": "RombiBack.Entities\\ROM\\SEGURIDAD\\Models\\Permisos\\Usuario.cs",
+              "ToolTip": "D:\\TAWA_JOSS\\ROMBI\\ROMBIBACK\\RombiBack.Entities\\ROM\\SEGURIDAD\\Models\\Permisos\\Usuario.cs",
+              "RelativeToolTip": "RombiBack.Entities\\ROM\\SEGURIDAD\\Models\\Permisos\\Usuario.cs",
+              "ViewState": "AgIAADYAAAAAAAAAAAAIwDwAAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-05T21:13:45.258Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
