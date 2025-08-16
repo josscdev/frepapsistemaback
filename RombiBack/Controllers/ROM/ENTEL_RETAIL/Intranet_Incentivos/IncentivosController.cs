@@ -23,146 +23,146 @@ namespace RombiBack.Controllers.ROM.ENTEL_RETAIL.Intranet_Incentivos
             _tokenValidationHelper = new TokenValidationHelper(configuracion);
         }
 
-        [HttpPost("validateUser")]
-        public IActionResult ValidateUser([FromBody] UserDTO request)
-        {
-            string usuario = request.USUARIO;
-            string clave = request.CLAVE;
+        //[HttpPost("validateUser")]
+        //public IActionResult ValidateUser([FromBody] UserDTO request)
+        //{
+        //    string usuario = request.USUARIO;
+        //    string clave = request.CLAVE;
 
-            UserDTO usuarioValidado = _incentivosService.ValidateUser(usuario, clave);
+        //    UserDTO usuarioValidado = _incentivosService.ValidateUser(usuario, clave);
 
-            if (usuarioValidado != null && !string.IsNullOrEmpty(usuarioValidado.USUARIO))
-            {
-                string token = _jwtHelper.GenerateToken(usuarioValidado.USUARIO);
+        //    if (usuarioValidado != null && !string.IsNullOrEmpty(usuarioValidado.USUARIO))
+        //    {
+        //        string token = _jwtHelper.GenerateToken(usuarioValidado.USUARIO);
 
-                return Ok(new
-                {
-                    success = true,
-                    message = "Usuario válido",
-                    token
-                });
-            }
-            else
-            {
-                return BadRequest("Usuario no encontrado o datos inválidos.");
-            }
-        }
-
-
-
-        [HttpPost("GeneralWithDNIConfirmationFalse")]
-        public ActionResult<IEnumerable<IncentivoVistaDTO>> GetGeneralWithDNIConfirmationFalse([FromBody] IncentivoPagoRequestDTO request)
-        {
-            string token = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
-
-            if (string.IsNullOrEmpty(token) || !token.StartsWith("Bearer "))
-            {
-                return BadRequest("Token inválido");
-            }
-
-            token = token.Substring("Bearer ".Length);
-
-            bool isValidToken = _tokenValidationHelper.ValidateToken(token);
-
-            if (!isValidToken)
-            {
-                return BadRequest("Token inválido");
-            }
-
-            var dniClaim = _jwtHelper.GetClaimValue(token, "dni");
-
-            if (string.IsNullOrEmpty(dniClaim))
-            {
-                return BadRequest("No se encontró el claim 'dni' en el token.");
-            }
-
-            try
-            {
-                var incentivosVistas = _incentivosService.GetGeneralIncentivosVistasWithDNIConfirmationFalse(dniClaim);
-                return Ok(incentivosVistas);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "Error interno del servidor: " + ex.Message);
-            }
-        }
+        //        return Ok(new
+        //        {
+        //            success = true,
+        //            message = "Usuario válido",
+        //            token
+        //        });
+        //    }
+        //    else
+        //    {
+        //        return BadRequest("Usuario no encontrado o datos inválidos.");
+        //    }
+        //}
 
 
-        [HttpPost("GetIncentivosPremios")]
-        public ActionResult<IEnumerable<IncentivoVistaDTO>> GetIncentivosPremios([FromBody] IncentivoPagoRequestDTO request)
-        {
-            string token = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
 
-            if (string.IsNullOrEmpty(token) || !token.StartsWith("Bearer "))
-            {
-                return BadRequest("Token inválido");
-            }
+        //[HttpPost("GeneralWithDNIConfirmationFalse")]
+        //public ActionResult<IEnumerable<IncentivoVistaDTO>> GetGeneralWithDNIConfirmationFalse([FromBody] IncentivoPagoRequestDTO request)
+        //{
+        //    string token = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
 
-            token = token.Substring("Bearer ".Length);
+        //    if (string.IsNullOrEmpty(token) || !token.StartsWith("Bearer "))
+        //    {
+        //        return BadRequest("Token inválido");
+        //    }
 
-            bool isValidToken = _tokenValidationHelper.ValidateToken(token);
+        //    token = token.Substring("Bearer ".Length);
 
-            if (!isValidToken)
-            {
-                return BadRequest("Token inválido");
-            }
+        //    bool isValidToken = _tokenValidationHelper.ValidateToken(token);
 
-            var dniClaim = _jwtHelper.GetClaimValue(token, "dni");
+        //    if (!isValidToken)
+        //    {
+        //        return BadRequest("Token inválido");
+        //    }
 
-            if (string.IsNullOrEmpty(dniClaim))
-            {
-                return BadRequest("No se encontró el claim 'dni' en el token.");
-            }
+        //    var dniClaim = _jwtHelper.GetClaimValue(token, "dni");
 
-            try
-            {
-                var incentivosVistas = _incentivosService.GetIncentivosPremios(dniClaim);
-                return Ok(incentivosVistas);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "Error interno del servidor: " + ex.Message);
-            }
-        }
+        //    if (string.IsNullOrEmpty(dniClaim))
+        //    {
+        //        return BadRequest("No se encontró el claim 'dni' en el token.");
+        //    }
+
+        //    try
+        //    {
+        //        var incentivosVistas = _incentivosService.GetGeneralIncentivosVistasWithDNIConfirmationFalse(dniClaim);
+        //        return Ok(incentivosVistas);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, "Error interno del servidor: " + ex.Message);
+        //    }
+        //}
 
 
-        [HttpPost("UpdateWithDNI")]
-        public IActionResult UpdateConfirmacionEntrega([FromBody] IncentivoPagoRequestDTO request)
-        {
-            string token = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+        //[HttpPost("GetIncentivosPremios")]
+        //public ActionResult<IEnumerable<IncentivoVistaDTO>> GetIncentivosPremios([FromBody] IncentivoPagoRequestDTO request)
+        //{
+        //    string token = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
 
-            if (string.IsNullOrEmpty(token) || !token.StartsWith("Bearer "))
-            {
-                return BadRequest("Token inválido");
-            }
+        //    if (string.IsNullOrEmpty(token) || !token.StartsWith("Bearer "))
+        //    {
+        //        return BadRequest("Token inválido");
+        //    }
 
-            token = token.Substring("Bearer ".Length);
+        //    token = token.Substring("Bearer ".Length);
 
-            bool isValidToken = _tokenValidationHelper.ValidateToken(token);
+        //    bool isValidToken = _tokenValidationHelper.ValidateToken(token);
 
-            if (!isValidToken)
-            {
-                return BadRequest("Token inválido");
-            }
+        //    if (!isValidToken)
+        //    {
+        //        return BadRequest("Token inválido");
+        //    }
 
-            var dniClaim = _jwtHelper.GetClaimValue(token, "dni");
+        //    var dniClaim = _jwtHelper.GetClaimValue(token, "dni");
 
-            if (string.IsNullOrEmpty(dniClaim))
-            {
-                return BadRequest("No se encontró el claim 'dni' en el token.");
-            }
+        //    if (string.IsNullOrEmpty(dniClaim))
+        //    {
+        //        return BadRequest("No se encontró el claim 'dni' en el token.");
+        //    }
 
-            try
-            {
-                int id = (int)request.Id;
-                _incentivosService.UpdateConfirmacionEntrega(dniClaim, id);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "Error interno del servidor: " + ex.Message);
-            }
-        }
+        //    try
+        //    {
+        //        var incentivosVistas = _incentivosService.GetIncentivosPremios(dniClaim);
+        //        return Ok(incentivosVistas);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, "Error interno del servidor: " + ex.Message);
+        //    }
+        //}
+
+
+        //[HttpPost("UpdateWithDNI")]
+        //public IActionResult UpdateConfirmacionEntrega([FromBody] IncentivoPagoRequestDTO request)
+        //{
+        //    string token = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+
+        //    if (string.IsNullOrEmpty(token) || !token.StartsWith("Bearer "))
+        //    {
+        //        return BadRequest("Token inválido");
+        //    }
+
+        //    token = token.Substring("Bearer ".Length);
+
+        //    bool isValidToken = _tokenValidationHelper.ValidateToken(token);
+
+        //    if (!isValidToken)
+        //    {
+        //        return BadRequest("Token inválido");
+        //    }
+
+        //    var dniClaim = _jwtHelper.GetClaimValue(token, "dni");
+
+        //    if (string.IsNullOrEmpty(dniClaim))
+        //    {
+        //        return BadRequest("No se encontró el claim 'dni' en el token.");
+        //    }
+
+        //    try
+        //    {
+        //        int id = (int)request.Id;
+        //        _incentivosService.UpdateConfirmacionEntrega(dniClaim, id);
+        //        return Ok();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, "Error interno del servidor: " + ex.Message);
+        //    }
+        //}
 
 
     }

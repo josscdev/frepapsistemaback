@@ -13,11 +13,11 @@ namespace RombiBack.Controllers.ROM.WIN_RETAIL.MGM_ReportsWINRET
             _reportsWINRETServices = reportsWINRETServices;
         }
 
-        [HttpGet("GetReportesWINRET")]
-        public async Task<IActionResult> GetReportesWINRET(string docusuario, int idemppaisnegcue)
-        {
-            var reportes = await _reportsWINRETServices.GetReportesWINRET(docusuario, idemppaisnegcue);
-            return Ok(reportes);
-        }
+        //[HttpGet("GetReportesWINRET")]
+        //public async Task<IActionResult> GetReportesWINRET(string docusuario, int idemppaisnegcue)
+        //{
+        //    var reportes = await _reportsWINRETServices.GetReportesWINRET(docusuario, idemppaisnegcue);
+        //    return Ok(reportes);
+        //}
     }
 }

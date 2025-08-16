@@ -15,19 +15,19 @@ namespace RombiBack.Controllers.ROM.ENTEL_TPF.MGM_MantenimientoTPF.MGM_BundleTPF
             _bundleTPFServices = bundleTPFServices;
         }
 
-        [HttpGet("GetBundlesTPF")]
-        public async Task<IActionResult> GetBundlesTPF(int idemppaisnegcue)
-        {
+        //[HttpGet("GetBundlesTPF")]
+        //public async Task<IActionResult> GetBundlesTPF(int idemppaisnegcue)
+        //{
 
-            var accrespuesta = await _bundleTPFServices.GetBundlesTPF(idemppaisnegcue);
-            return Ok(accrespuesta);
-        }
+        //    var accrespuesta = await _bundleTPFServices.GetBundlesTPF(idemppaisnegcue);
+        //    return Ok(accrespuesta);
+        //}
 
-        [HttpPost("PutBundleTPF")]
-        public async Task<IActionResult> PutBundleTPF([FromBody] ActualizarBundle actualizarbundle)
-        {
-            var accrespuesta = await _bundleTPFServices.UpdateBundleTPF(actualizarbundle);
-            return Ok(accrespuesta);
-        }
+        //[HttpPost("PutBundleTPF")]
+        //public async Task<IActionResult> PutBundleTPF([FromBody] ActualizarBundle actualizarbundle)
+        //{
+        //    var accrespuesta = await _bundleTPFServices.UpdateBundleTPF(actualizarbundle);
+        //    return Ok(accrespuesta);
+        //}
     }
 }

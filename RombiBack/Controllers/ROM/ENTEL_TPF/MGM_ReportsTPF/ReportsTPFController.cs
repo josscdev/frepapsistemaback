@@ -23,11 +23,11 @@ namespace RombiBack.Controllers.ROM.ENTEL_TPF.MGM_ReportsTPF
         //    return Ok(reporte);
         //}
 
-        [HttpGet("GetReportesTPF")]
-        public async Task<IActionResult> GetReportesTPF(string docusuario, int idemppaisnegcue)
-        {
-            var tipdocs = await _reportsTPFServices.GetReportesTPF(docusuario, idemppaisnegcue);
-            return Ok(tipdocs);
-        }
+        //[HttpGet("GetReportesTPF")]
+        //public async Task<IActionResult> GetReportesTPF(string docusuario, int idemppaisnegcue)
+        //{
+        //    var tipdocs = await _reportsTPFServices.GetReportesTPF(docusuario, idemppaisnegcue);
+        //    return Ok(tipdocs);
+        //}
     }
 }

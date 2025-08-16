@@ -22,11 +22,11 @@ namespace RombiBack.Controllers.ROM.ENTEL_RETAIL.MGM_Reports
         //    return Ok(reporte);
         //}
 
-        [HttpGet("GetReportes")]
-        public async Task<IActionResult> GetReportes( string docusuario,int idemppaisnegcue)
-        {
-            var tipdocs = await _reportsServices.GetReportes(docusuario, idemppaisnegcue);
-            return Ok(tipdocs);
-        }
+        //[HttpGet("GetReportes")]
+        //public async Task<IActionResult> GetReportes( string docusuario,int idemppaisnegcue)
+        //{
+        //    var tipdocs = await _reportsServices.GetReportes(docusuario, idemppaisnegcue);
+        //    return Ok(tipdocs);
+        //}
     }
 }

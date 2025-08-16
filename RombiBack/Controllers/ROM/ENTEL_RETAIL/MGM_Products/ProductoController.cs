@@ -34,12 +34,12 @@ namespace RombiBack.Controllers.ROM.ENTEL_RETAIL.MGM_Products
         //    }
         //}
 
-        [HttpGet]
-        public async Task<IActionResult> ObtenerTodos()
-        {
-            var productos = await _productoService.ObtenerTodo();
-            return Ok(productos);
-        }
+        //[HttpGet]
+        //public async Task<IActionResult> ObtenerTodos()
+        //{
+        //    var productos = await _productoService.ObtenerTodo();
+        //    return Ok(productos);
+        //}
 
 
        

@@ -17,35 +17,35 @@ namespace RombiBack.Controllers.ROM.ENTEL_RETAIL.MGM_Marcacion
         }
 
 
-        [HttpGet("GetUsuarioMarcacion")]
-        public IActionResult GetUsuarioMarcacion(string docusuario)
-        {
-            try
-            {
-                var respuesta = _marcacionServices.GetUsuarioMarcacion(docusuario); // Asume que GetOneRol ahora recibe un int
-                return Ok(respuesta);  // Retorna un 200 OK con la respuesta
-            }
-            catch (Exception ex)
-            {
-                // Manejo de excepciones, devuelve un error 500 con el mensaje de error
-                return StatusCode(500, new { message = ex.Message });
-            }
-        }
+        //[HttpGet("GetUsuarioMarcacion")]
+        //public IActionResult GetUsuarioMarcacion(string docusuario)
+        //{
+        //    try
+        //    {
+        //        var respuesta = _marcacionServices.GetUsuarioMarcacion(docusuario); // Asume que GetOneRol ahora recibe un int
+        //        return Ok(respuesta);  // Retorna un 200 OK con la respuesta
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Manejo de excepciones, devuelve un error 500 con el mensaje de error
+        //        return StatusCode(500, new { message = ex.Message });
+        //    }
+        //}
 
-        [HttpPost("PostEmpleadoAsistenciaMarcacion")]
-        public IActionResult PostEmpleadoAsistenciaMarcacion(string docusuario, DateTime fechamarcacion)
-        {
-            try
-            {
-                var respuesta = _marcacionServices.PostEmpleadoAsistenciaMarcacion( docusuario,  fechamarcacion); // Asume que GetOneRol ahora recibe un int
-                return Ok(respuesta);  // Retorna un 200 OK con la respuesta
-            }
-            catch (Exception ex)
-            {
-                // Manejo de excepciones, devuelve un error 500 con el mensaje de error
-                return StatusCode(500, new { message = ex.Message });
-            }
-        }
+        //[HttpPost("PostEmpleadoAsistenciaMarcacion")]
+        //public IActionResult PostEmpleadoAsistenciaMarcacion(string docusuario, DateTime fechamarcacion)
+        //{
+        //    try
+        //    {
+        //        var respuesta = _marcacionServices.PostEmpleadoAsistenciaMarcacion( docusuario,  fechamarcacion); // Asume que GetOneRol ahora recibe un int
+        //        return Ok(respuesta);  // Retorna un 200 OK con la respuesta
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Manejo de excepciones, devuelve un error 500 con el mensaje de error
+        //        return StatusCode(500, new { message = ex.Message });
+        //    }
+        //}
 
 
     }

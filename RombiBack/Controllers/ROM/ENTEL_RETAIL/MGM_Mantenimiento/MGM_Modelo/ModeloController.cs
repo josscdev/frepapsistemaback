@@ -19,28 +19,28 @@ namespace RombiBack.Controllers.ROM.ENTEL_RETAIL.MGM_Mantenimiento.MGM_Modelo
             _modeloServices = modeloServices;
         }
 
-        [HttpPost("GetModeloRomWeb")]
-        public async Task<IActionResult> GetModeloRomWeb([FromBody] int idemppaisnegcue)
-        {
+        //[HttpPost("GetModeloRomWeb")]
+        //public async Task<IActionResult> GetModeloRomWeb([FromBody] int idemppaisnegcue)
+        //{
 
-            var modelorespuesta = await _modeloServices.GetModeloRomWeb(idemppaisnegcue);
-            return Ok(modelorespuesta);
-        }
+        //    var modelorespuesta = await _modeloServices.GetModeloRomWeb(idemppaisnegcue);
+        //    return Ok(modelorespuesta);
+        //}
 
-        [HttpPost("PostModeloRomWeb")]
-        public async Task<IActionResult> PostModeloRomWeb([FromBody] Modelo modelo)
-        {
+        //[HttpPost("PostModeloRomWeb")]
+        //public async Task<IActionResult> PostModeloRomWeb([FromBody] Modelo modelo)
+        //{
 
-            var modelorespuesta = await _modeloServices.PostModeloRomWeb(modelo);
-            return Ok(modelorespuesta);
-        }
+        //    var modelorespuesta = await _modeloServices.PostModeloRomWeb(modelo);
+        //    return Ok(modelorespuesta);
+        //}
 
-        [HttpPost("DeleteModeloRomWeb")]
-        public async Task<IActionResult> DeleteModeloRomWeb([FromBody] Modelo modelo)
-        {
+        //[HttpPost("DeleteModeloRomWeb")]
+        //public async Task<IActionResult> DeleteModeloRomWeb([FromBody] Modelo modelo)
+        //{
 
-            var modelorespuesta = await _modeloServices.DeleteModeloRomWeb(modelo);
-            return Ok(modelorespuesta);
-        }
+        //    var modelorespuesta = await _modeloServices.DeleteModeloRomWeb(modelo);
+        //    return Ok(modelorespuesta);
+        //}
     }
 }
