@@ -14,6 +14,7 @@
     <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.300.98" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.15" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Npgsql" Version="7.0.10" />
   </ItemGroup>
 
 </Project>

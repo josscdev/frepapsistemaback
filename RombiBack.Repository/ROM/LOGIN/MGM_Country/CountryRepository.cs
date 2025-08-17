@@ -1,4 +1,5 @@
-﻿using RombiBack.Abstraction;
+﻿using Npgsql;
+using RombiBack.Abstraction;
 using RombiBack.Entities.ROM.LOGIN.Company;
 using RombiBack.Entities.ROM.LOGIN.Country;
 using System;
@@ -19,46 +20,36 @@ namespace RombiBack.Repository.ROM.LOGIN.MGM_Country
         {
             _dbConnection = dbConnection;
         }
-      
+
+
 
         public async Task<List<Country>> GetAll()
         {
-            List<Country> countries = new List<Country>();
+            var countries = new List<Country>();
 
             try
             {
-                using (SqlConnection sql = new SqlConnection(_dbConnection.GetConnectionROMBI()))
-                {
-                    // Abre la conexión antes de usarla
-                    await sql.OpenAsync();
+                await using var conn = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+                await conn.OpenAsync();
 
-                    // Crea y ejecuta la consulta SQL
-                    string query = "SELECT idpais, nombrepais FROM [PAIS]";
-                    using (SqlCommand cmd = new SqlCommand(query, sql))
+                const string sql = "select idpais, nombrepais from pais";
+
+                await using var cmd = new NpgsqlCommand(sql, conn);
+                await using var reader = await cmd.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    countries.Add(new Country
                     {
-                        using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
-                        {
-                            // Comprueba si hay filas devueltas
-                            if (reader.HasRows)
-                            {
-                                // Itera sobre las filas y mapea los resultados a la lista de empresas
-                                while (await reader.ReadAsync())
-                                {
-                                    Country country = new Country
-                                    {
-                                        idpais = reader["idpais"] != DBNull.Value ? Convert.ToInt32(reader["idpais"]) : (int?)null,
-                                        nombrepais = reader["nombrepais"] != DBNull.Value ? reader["nombrepais"].ToString() : null
-                                    };
-                                    countries.Add(country);
-                                }
-                            }
-                        }
-                    }
+                        idpais = reader.IsDBNull(0) ? (int?)null : reader.GetInt32(0),
+                        nombrepais = reader.IsDBNull(1) ? null : reader.GetString(1)
+                    });
                 }
             }
             catch (Exception ex)
             {
-                // Manejar la excepción según sea necesario (registrar, relanzar, etc.)
+                // loguea ex
+                throw;
             }
 
             return countries;
@@ -67,6 +58,6 @@ namespace RombiBack.Repository.ROM.LOGIN.MGM_Country
 
 
 
-       
+
     }
 }

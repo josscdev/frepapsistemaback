@@ -1,4 +1,5 @@
-﻿using RombiBack.Abstraction;
+﻿using Npgsql;
+using RombiBack.Abstraction;
 using RombiBack.Entities.ROM.LOGIN.Company;
 using System;
 using System.Collections.Generic;
@@ -19,35 +20,27 @@ namespace RombiBack.Repository.ROM.LOGIN.Company
         }
         public async Task<List<Companys>> GetCompany()
         {
-            List<Companys> companies = new List<Companys>();
+            var companies = new List<Companys>();
 
-            using (SqlConnection sql = new SqlConnection(_dbConnection.GetConnectionROMBI()))
+            await using var conn = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+            await conn.OpenAsync();
+
+            const string sql = "select idempresa, nombreempresa from empresa";
+
+            await using var cmd = new NpgsqlCommand(sql, conn);
+            await using var reader = await cmd.ExecuteReaderAsync();
+
+            // (Opcional) Obtén los ordinales una sola vez
+            int ordId = reader.GetOrdinal("idempresa");
+            int ordNombre = reader.GetOrdinal("nombreempresa");
+
+            while (await reader.ReadAsync())
             {
-                // Abre la conexión antes de usarla
-                await sql.OpenAsync();
-
-                // Crea y ejecuta la consulta SQL
-                string query = "SELECT idempresa, nombreempresa FROM [EMPRESA]";
-                using (SqlCommand cmd = new SqlCommand(query, sql))
+                companies.Add(new Companys
                 {
-                    using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
-                    {
-                        // Comprueba si hay filas devueltas
-                        if (reader.HasRows)
-                        {
-                            // Itera sobre las filas y mapea los resultados a la lista de empresas
-                            while (await reader.ReadAsync())
-                            {
-                                Companys company = new Companys
-                                {
-                                    idempresa = reader["idempresa"] != DBNull.Value ? Convert.ToInt32(reader["idempresa"]) : (int?)null,
-                                    nombreempresa = reader["nombreempresa"] != DBNull.Value ? reader["nombreempresa"].ToString() : null
-                                };
-                                companies.Add(company);
-                            }
-                        }
-                    }
-                }
+                    idempresa = reader.IsDBNull(ordId) ? (int?)null : reader.GetInt32(ordId),   // si es BIGINT, usa GetInt64 y castea
+                    nombreempresa = reader.IsDBNull(ordNombre) ? null : reader.GetString(ordNombre)
+                });
             }
 
             return companies;

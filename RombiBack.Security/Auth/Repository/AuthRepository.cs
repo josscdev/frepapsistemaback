@@ -15,6 +15,8 @@ using RombiBack.Security.Model.UserAuth.Modules;
 using RombiBack.Entities.ROM.SEGURIDAD.Models.Permisos;
 using System.Runtime.Intrinsics.Arm;
 using RombiBack.Entities.ROM.ENTEL_RETAIL.Models;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace RombiBack.Security.Auth.Repsitory
 {
@@ -32,53 +34,49 @@ namespace RombiBack.Security.Auth.Repsitory
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
+                await using var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+                await connection.OpenAsync();
+
+                // 🔹 Ejecutamos la FUNCTION como un SELECT
+                const string sql = @"select * 
+                             from intranet.usp_rombilogin(@idempresa, @idpais, @user, @password)";
+
+                await using var command = new NpgsqlCommand(sql, connection);
+
+                command.Parameters.Add(new NpgsqlParameter("@idempresa", NpgsqlDbType.Integer) { Value = request.idempresa });
+                command.Parameters.Add(new NpgsqlParameter("@idpais", NpgsqlDbType.Integer) { Value = request.idpais });
+                command.Parameters.Add(new NpgsqlParameter("@user", NpgsqlDbType.Varchar) { Value = request.user ?? string.Empty });
+                command.Parameters.Add(new NpgsqlParameter("@password", NpgsqlDbType.Varchar) { Value = request.password ?? string.Empty });
+
+                await using var reader = await command.ExecuteReaderAsync();
+
+                if (await reader.ReadAsync())
                 {
-                    await connection.OpenAsync();
-
-                    using (SqlCommand command = new SqlCommand("USP_ROMBILOGIN", connection))
+                    // 🚀 Mapeamos los valores que devuelve la función
+                    return new UserDTOResponse
                     {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.Add("@idempresa", SqlDbType.Int).Value = request.idempresa; // Ajustar el tamaño del parámetro
-                        command.Parameters.Add("@idpais", SqlDbType.Int).Value = request.idpais; // Ajustar el tamaño del parámetro
-                        command.Parameters.Add("@user", SqlDbType.VarChar, 50).Value = request.user;
-                        command.Parameters.Add("@password", SqlDbType.VarChar, 50).Value = request.password;
-
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                        {
-                            if (await reader.ReadAsync())
-                            {
-                                // Acceso concedido
-                                UserDTOResponse userAuth = new UserDTOResponse
-                                {
-                                    Resultado = reader["Resultado"] != DBNull.Value ? reader["Resultado"].ToString() : null,
-                                    Accede = reader["Accede"] != DBNull.Value ? Convert.ToInt32(reader["Accede"]) : 0,
-                                    Perfil = reader["Perfil"] != DBNull.Value ? reader["Perfil"].ToString() : null,
-                                    idusuario = reader["idusuario"] != DBNull.Value ? Convert.ToInt32(reader["idusuario"]) : (int?)null,
-                                    idusuarioromweb = reader["idusuarioromweb"] != DBNull.Value ? Convert.ToInt32(reader["idusuarioromweb"]) : (int?)null,
-                                };
-                                return userAuth;
-                            }
-                            else
-                            {
-                                // Acceso denegado
-                                return new UserDTOResponse
-                                {
-                                    Resultado = reader["Resultado"].ToString(),
-                                    Accede = Convert.ToInt32(reader["Accede"]),
-                                    Perfil = reader["Perfil"].ToString(),
-                                    idusuario = Convert.ToInt32(reader["idusuario"])
-                                };
-                            }
-                        }
-                    }
+                        Resultado = reader["resultado"] is DBNull ? null : reader.GetString(reader.GetOrdinal("resultado")),
+                        Accede = reader["accede"] is DBNull ? 0 : reader.GetInt32(reader.GetOrdinal("accede")),
+                        Perfil = reader["perfil"] is DBNull ? null : reader.GetString(reader.GetOrdinal("perfil")),
+                        idusuario = reader["idusuario"] is DBNull ? (int?)null : reader.GetInt32(reader.GetOrdinal("idusuario")),
+                        idusuarioromweb = reader["idusuarioromweb"] is DBNull ? (int?)null : reader.GetInt32(reader.GetOrdinal("idusuarioromweb"))
+                    };
                 }
+
+                // 🔹 Si no devolvió filas, acceso denegado
+                return new UserDTOResponse
+                {
+                    Resultado = "Acceso denegado",
+                    Accede = 0,
+                    Perfil = null,
+                    idusuario = null,
+                    idusuarioromweb = null
+                };
             }
             catch (Exception ex)
             {
-                // Manejo de errores
-                Console.WriteLine("Error en ValidateUser: " + ex.Message);
-                throw; // Lanzar excepción para que la capa superior maneje el error
+                Console.WriteLine("Error en RombiLoginMain: " + ex.Message);
+                throw;
             }
         }
 
