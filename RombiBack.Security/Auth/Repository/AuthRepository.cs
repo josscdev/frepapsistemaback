@@ -82,348 +82,373 @@ namespace RombiBack.Security.Auth.Repsitory
 
         public async Task<UserDataDTOResponse> GetUserData(UserDTORequest request)
         {
+            const string sql = @"
+                                SELECT usuario, nombres, apellidopaterno, apellidomaterno
+                                FROM intranet.usp_getuserdata(@usuario)
+                                LIMIT 1;";
+
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
+                await using var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+                await connection.OpenAsync();
+
+                await using var command = new NpgsqlCommand(sql, connection);
+                command.Parameters.AddWithValue("usuario", NpgsqlDbType.Varchar, (object?)request.user ?? DBNull.Value);
+
+                await using var reader = await command.ExecuteReaderAsync();
+
+                if (await reader.ReadAsync())
                 {
-                    await connection.OpenAsync();
+                    // fila encontrada
+                    int oUsuario = reader.GetOrdinal("usuario");
+                    int oNombres = reader.GetOrdinal("nombres");
+                    int oApellidoPaterno = reader.GetOrdinal("apellidopaterno");
+                    int oApellidoMaterno = reader.GetOrdinal("apellidomaterno");
 
-                    using (SqlCommand command = new SqlCommand("USP_GETUSERDATA", connection))
+                    return new UserDataDTOResponse
                     {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.Add("@usuario", SqlDbType.Char).Value = request.user; // Ajustar el tamaño del parámetro
-                      
-
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                        {
-                            if (await reader.ReadAsync())
-                            {
-                                // Acceso concedido
-                                UserDataDTOResponse userAuth = new UserDataDTOResponse
-                                {
-                                    usuario = reader["usuario"].ToString(),
-                                    nombres = reader["nombres"].ToString(),
-                                    apellidopaterno = reader["apellidopaterno"].ToString(),
-                                    apellidomaterno = reader["apellidomaterno"].ToString(),
-
-                                };
-                                return userAuth;
-                            }
-                            else
-                            {
-                                // Acceso denegado
-                                return new UserDataDTOResponse
-                                {
-                                    usuario = reader["usuario"].ToString(),
-                                    nombres = reader["nombres"].ToString(),
-                                    apellidopaterno = reader["apellidopaterno"].ToString(),
-                                    apellidomaterno = reader["apellidomaterno"].ToString(),
-                                };
-                            }
-                        }
-                    }
+                        usuario = reader.IsDBNull(oUsuario) ? string.Empty : reader.GetString(oUsuario),
+                        nombres = reader.IsDBNull(oNombres) ? string.Empty : reader.GetString(oNombres),
+                        apellidopaterno = reader.IsDBNull(oApellidoPaterno) ? string.Empty : reader.GetString(oApellidoPaterno),
+                        apellidomaterno = reader.IsDBNull(oApellidoMaterno) ? string.Empty : reader.GetString(oApellidoMaterno),
+                    };
                 }
+
+                // sin filas → devuelve objeto vacío (o retorna null si prefieres)
+                return new UserDataDTOResponse
+                {
+                    usuario = string.Empty,
+                    nombres = string.Empty,
+                    apellidopaterno = string.Empty,
+                    apellidomaterno = string.Empty
+                };
+            }
+            catch (NpgsqlException npgEx)
+            {
+                Console.WriteLine($"PostgreSQL error [{npgEx.SqlState}]: {npgEx.Message}");
+                throw;
             }
             catch (Exception ex)
             {
-                // Manejo de errores
-                Console.WriteLine("Error en ValidateUser: " + ex.Message);
-                throw; // Lanzar excepción para que la capa superior maneje el error
+                Console.WriteLine("Error en GetUserData: " + ex.Message);
+                throw;
             }
         }
 
         public async Task<List<BusinessAccountResponse>> GetBusinessUser(UserDTORequest request)
         {
+            var result = new List<BusinessAccountResponse>();
+
+            const string sql = @"
+                                SELECT idpais, idnegocio, nombrenegocio
+                                FROM usp_getnegociouser(@paisid, @empresaid, @usuario);";
+
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
+                await using var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+                await connection.OpenAsync();
+
+                await using var command = new NpgsqlCommand(sql, connection);
+                command.Parameters.AddWithValue("paisid", NpgsqlDbType.Integer, request.idpais);
+                command.Parameters.AddWithValue("empresaid", NpgsqlDbType.Integer, request.idempresa);
+                command.Parameters.AddWithValue("usuario", NpgsqlDbType.Varchar, (object?)request.user ?? DBNull.Value);
+
+                await using var reader = await command.ExecuteReaderAsync();
+
+                int ordIdPais = reader.GetOrdinal("idpais");
+                int ordIdNegocio = reader.GetOrdinal("idnegocio");
+                int ordNombreNegocio = reader.GetOrdinal("nombrenegocio");
+
+                while (await reader.ReadAsync())
                 {
-                    await connection.OpenAsync();
-
-                    using (SqlCommand command = new SqlCommand("USP_GETNEGOCIOUSER", connection))
+                    result.Add(new BusinessAccountResponse
                     {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.Add("@PAISID", SqlDbType.Int).Value = request.idpais;
-                        command.Parameters.Add("@EMPRESAID", SqlDbType.Int).Value = request.idempresa;
-                        command.Parameters.Add("@USUARIO", SqlDbType.Char, 50).Value = request.user;
-
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                        {
-                            if (reader.HasRows)
-                            {
-                                List<BusinessAccountResponse> response = new List<BusinessAccountResponse>();
-
-                                while (await reader.ReadAsync())
-                                {
-                                    BusinessAccountResponse businessAccount = new BusinessAccountResponse();
-                                    businessAccount.idpais = reader.GetInt32(reader.GetOrdinal("idpais"));
-                                    businessAccount.idnegocio = reader.GetInt32(reader.GetOrdinal("idnegocio"));
-                                    businessAccount.nombrenegocio = reader.GetString(reader.GetOrdinal("nombrenegocio"));
-
-                                    response.Add(businessAccount);
-                                }
-
-                                return response;
-                            }
-                            else
-                            {
-                                // No se encontraron resultados
-                                return new List<BusinessAccountResponse>(); // Devuelve una lista vacía en lugar de null
-                            }
-                        }
-                    }
+                        idpais = reader.IsDBNull(ordIdPais) ? 0 : reader.GetInt32(ordIdPais),
+                        idnegocio = reader.IsDBNull(ordIdNegocio) ? 0 : reader.GetInt32(ordIdNegocio),
+                        nombrenegocio = reader.IsDBNull(ordNombreNegocio) ? string.Empty : reader.GetString(ordNombreNegocio)
+                    });
                 }
+            }
+            catch (NpgsqlException npgEx)
+            {
+                Console.WriteLine($"PostgreSQL error [{npgEx.SqlState}]: {npgEx.Message}");
+                throw;
             }
             catch (Exception ex)
             {
-                // Manejar la excepción
-                Console.WriteLine("Error: " + ex.Message);
-                throw; // O devuelve algún tipo de indicación de error adecuada
+                Console.WriteLine($"Error en GetBusinessUser: {ex.Message}\n{ex.StackTrace}");
+                throw;
             }
+
+            return result; // lista vacía si no hubo filas
         }
 
         public async Task<List<BusinessAccountResponse>> GetBusinessAccountUser(UserDTORequest request)
         {
+            var result = new List<BusinessAccountResponse>();
+
+            const string sql = @"
+                                SELECT idpais, idnegocio, nombrenegocio, idcuenta, nombrecuenta
+                                FROM intranet.usp_getcuentauser(@empresaid, @idnegocio, @usuario);";
+
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
+                await using var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+                await connection.OpenAsync();
+
+                await using var command = new NpgsqlCommand(sql, connection);
+                command.Parameters.AddWithValue("empresaid", NpgsqlDbType.Integer, request.idempresa);
+                command.Parameters.AddWithValue("idnegocio", NpgsqlDbType.Integer, request.idnegocio);
+                command.Parameters.AddWithValue("usuario", NpgsqlDbType.Varchar, (object?)request.user ?? DBNull.Value);
+
+                await using var reader = await command.ExecuteReaderAsync();
+
+                int ordIdPais = reader.GetOrdinal("idpais");
+                int ordIdNegocio = reader.GetOrdinal("idnegocio");
+                int ordNombreNegocio = reader.GetOrdinal("nombrenegocio");
+                int ordIdCuenta = reader.GetOrdinal("idcuenta");
+                int ordNombreCuenta = reader.GetOrdinal("nombrecuenta");
+
+                while (await reader.ReadAsync())
                 {
-                    await connection.OpenAsync();
-
-                    using (SqlCommand command = new SqlCommand("USP_GETCUENTAUSER", connection))
+                    result.Add(new BusinessAccountResponse
                     {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.Add("@EMPRESAID", SqlDbType.Int).Value = request.idempresa;
-                        command.Parameters.Add("@COD_NEGOCIO", SqlDbType.Int).Value = request.idnegocio;
-                        command.Parameters.Add("@USUARIO", SqlDbType.Char, 50).Value = request.user;
-
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                        {
-                            if (reader.HasRows)
-                            {
-                                List<BusinessAccountResponse> response = new List<BusinessAccountResponse>();
-
-                                while (await reader.ReadAsync())
-                                {
-                                    BusinessAccountResponse businessAccount = new BusinessAccountResponse();
-                                    businessAccount.idpais = reader.GetInt32(reader.GetOrdinal("idpais"));
-                                    businessAccount.idnegocio = reader.GetInt32(reader.GetOrdinal("idnegocio"));
-                                    businessAccount.nombrenegocio = reader.GetString(reader.GetOrdinal("nombrenegocio"));
-                                    businessAccount.idcuenta = reader.GetInt32(reader.GetOrdinal("idcuenta"));
-                                    businessAccount.nombrecuenta = reader.GetString(reader.GetOrdinal("nombrecuenta"));
-
-                                    response.Add(businessAccount);
-                                }
-
-                                return response;
-                            }
-                            else
-                            {
-                                // No se encontraron resultados
-                                return new List<BusinessAccountResponse>(); // Devuelve una lista vacía en lugar de null
-                            }
-                        }
-                    }
+                        idpais = reader.IsDBNull(ordIdPais) ? 0 : reader.GetInt32(ordIdPais),
+                        idnegocio = reader.IsDBNull(ordIdNegocio) ? 0 : reader.GetInt32(ordIdNegocio),
+                        nombrenegocio = reader.IsDBNull(ordNombreNegocio) ? string.Empty : reader.GetString(ordNombreNegocio),
+                        idcuenta = reader.IsDBNull(ordIdCuenta) ? 0 : reader.GetInt32(ordIdCuenta),
+                        nombrecuenta = reader.IsDBNull(ordNombreCuenta) ? string.Empty : reader.GetString(ordNombreCuenta)
+                    });
                 }
+            }
+            catch (NpgsqlException npgEx)
+            {
+                Console.WriteLine($"PostgreSQL error [{npgEx.SqlState}]: {npgEx.Message}");
+                throw;
             }
             catch (Exception ex)
             {
-                // Manejo de errores
-                // Por ejemplo, podrías registrar el error y devolver un mensaje de error adecuado
-                Console.WriteLine("Error: " + ex.Message);
-                throw; // O devuelve algún tipo de indicación de error adecuada
+                Console.WriteLine($"Error en GetBusinessAccountUser: {ex.Message}\n{ex.StackTrace}");
+                throw;
             }
+
+            return result; // lista vacía si no hay filas
         }
 
         public async Task<List<ModuloDTOResponse>> GetPermissions(UserDTORequest request)
         {
-            List<ModuloDTOResponse> permissions = new List<ModuloDTOResponse>();
+            var permissions = new List<ModuloDTOResponse>();
+
+            // Trae todas las columnas que tu DTO necesita desde la función PG
+            const string sql = @"
+                                SELECT
+                                  idmodulo, nombremodulo, iconomodulo, rutamodulo, nivelmodulo, ordenmodulo, estadomodulo,
+                                  idperfilmodulo, nombreperfilmodulo,
+                                  idsubmodulo, nombresubmodulo, iconosubmodulo, rutasubmodulo, nivelsubmodulo, ordensubmodulo, estadosubmodulo,
+                                  idperfilsubmodulo, nombreperfilsubmodulo,
+                                  iditemmodulo, nombreitemmodulo, iconoitemmodulo, rutaitemmodulo, nivelitemmodulo, ordenitemmodulo, estadoitemmodulo,
+                                  idperfilitemmodulo, nombreperfilitemmodulo
+                                FROM usp_getmenupermissionsuser(@idpais, @idempresa, @idnegocio, @idcuenta, @usuario);";
 
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
+                await using var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+                await connection.OpenAsync();
+
+                await using var command = new NpgsqlCommand(sql, connection);
+                command.Parameters.AddWithValue("idpais", NpgsqlDbType.Integer, request.idpais);
+                command.Parameters.AddWithValue("idempresa", NpgsqlDbType.Integer, request.idempresa);
+                command.Parameters.AddWithValue("idnegocio", NpgsqlDbType.Integer, request.idnegocio);
+                command.Parameters.AddWithValue("idcuenta", NpgsqlDbType.Integer, request.idcuenta);
+                command.Parameters.AddWithValue("usuario", NpgsqlDbType.Varchar, (object?)request.user ?? DBNull.Value);
+
+                var moduloDictionary = new Dictionary<int, ModuloDTOResponse>();
+
+                await using var reader = await command.ExecuteReaderAsync();
+
+                // Ordinales (micro-optimización y evita repetir GetOrdinal)
+                int oIdModulo = reader.GetOrdinal("idmodulo");
+                int oNombreModulo = reader.GetOrdinal("nombremodulo");
+                int oIconoModulo = reader.GetOrdinal("iconomodulo");
+                int oRutaModulo = reader.GetOrdinal("rutamodulo");
+                int oNivelModulo = reader.GetOrdinal("nivelmodulo");
+                int oOrdenModulo = reader.GetOrdinal("ordenmodulo");
+                int oEstadoModulo = reader.GetOrdinal("estadomodulo");
+                int oIdPerfilModulo = reader.GetOrdinal("idperfilmodulo");           // <-- corregido
+                int oNombrePerfilModulo = reader.GetOrdinal("nombreperfilmodulo");
+
+                int oIdSubModulo = reader.GetOrdinal("idsubmodulo");
+                int oNombreSubModulo = reader.GetOrdinal("nombresubmodulo");
+                int oIconoSubModulo = reader.GetOrdinal("iconosubmodulo");
+                int oRutaSubModulo = reader.GetOrdinal("rutasubmodulo");
+                int oNivelSubModulo = reader.GetOrdinal("nivelsubmodulo");
+                int oOrdenSubModulo = reader.GetOrdinal("ordensubmodulo");
+                int oEstadoSubModulo = reader.GetOrdinal("estadosubmodulo");
+                int oIdPerfilSubModulo = reader.GetOrdinal("idperfilsubmodulo");
+                int oNombrePerfilSubModulo = reader.GetOrdinal("nombreperfilsubmodulo");
+
+                int oIdItem = reader.GetOrdinal("iditemmodulo");
+                int oNombreItem = reader.GetOrdinal("nombreitemmodulo");
+                int oIconoItem = reader.GetOrdinal("iconoitemmodulo");
+                int oRutaItem = reader.GetOrdinal("rutaitemmodulo");
+                int oNivelItem = reader.GetOrdinal("nivelitemmodulo");
+                int oOrdenItem = reader.GetOrdinal("ordenitemmodulo");
+                int oEstadoItem = reader.GetOrdinal("estadoitemmodulo");
+                int oIdPerfilItem = reader.GetOrdinal("idperfilitemmodulo");
+                int oNombrePerfilItem = reader.GetOrdinal("nombreperfilitemmodulo");
+
+                while (await reader.ReadAsync())
                 {
-                    await connection.OpenAsync();
+                    int idmodulo = reader.IsDBNull(oIdModulo) ? 0 : reader.GetInt32(oIdModulo);
 
-                    using (SqlCommand command = new SqlCommand("USP_GETMENUPERMISSIONSUSER", connection))
+                    if (!moduloDictionary.TryGetValue(idmodulo, out var module))
                     {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.Add("@IDPAIS", SqlDbType.Int).Value = request.idpais;
-                        command.Parameters.Add("@IDEMPRESA", SqlDbType.Int).Value = request.idempresa;
-                        command.Parameters.Add("@IDNEGOCIO", SqlDbType.Int).Value = request.idnegocio;
-                        command.Parameters.Add("@IDCUENTA", SqlDbType.Int).Value = request.idcuenta;
-                        command.Parameters.Add("@USUARIO", SqlDbType.VarChar, 50).Value = request.user;
-
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                        module = new ModuloDTOResponse
                         {
-                            Dictionary<int, ModuloDTOResponse> moduloDictionary = new Dictionary<int, ModuloDTOResponse>();
+                            idmodulo = idmodulo,
+                            nombremodulo = reader.IsDBNull(oNombreModulo) ? null : reader.GetString(oNombreModulo),
+                            iconomodulo = reader.IsDBNull(oIconoModulo) ? null : reader.GetString(oIconoModulo),
+                            rutamodulo = reader.IsDBNull(oRutaModulo) ? null : reader.GetString(oRutaModulo),
+                            nivelmodulo = reader.IsDBNull(oNivelModulo) ? 0 : reader.GetInt32(oNivelModulo),
+                            ordenmodulo = reader.IsDBNull(oOrdenModulo) ? 0 : reader.GetInt32(oOrdenModulo),
+                            estadomodulo = reader.IsDBNull(oEstadoModulo) ? 0 : reader.GetInt32(oEstadoModulo),
+                            idperfilmodulo = reader.IsDBNull(oIdPerfilModulo) ? 0 : reader.GetInt32(oIdPerfilModulo),
+                            nombreperfilmodulo = reader.IsDBNull(oNombrePerfilModulo) ? null : reader.GetString(oNombrePerfilModulo),
+                            submodules = new List<SubModuloDTOResponse>()
+                        };
+                        moduloDictionary.Add(idmodulo, module);
+                    }
 
-                            while (await reader.ReadAsync())
-                            {
-                                int idmodulo = reader.IsDBNull(reader.GetOrdinal("idmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("idmodulo"));
+                    var submodule = new SubModuloDTOResponse
+                    {
+                        idsubmodulo = reader.IsDBNull(oIdSubModulo) ? 0 : reader.GetInt32(oIdSubModulo),
+                        nombresubmodulo = reader.IsDBNull(oNombreSubModulo) ? null : reader.GetString(oNombreSubModulo),
+                        iconosubmodulo = reader.IsDBNull(oIconoSubModulo) ? null : reader.GetString(oIconoSubModulo),
+                        rutasubmodulo = reader.IsDBNull(oRutaSubModulo) ? null : reader.GetString(oRutaSubModulo),
+                        nivelsubmodulo = reader.IsDBNull(oNivelSubModulo) ? 0 : reader.GetInt32(oNivelSubModulo),
+                        ordensubmodulo = reader.IsDBNull(oOrdenSubModulo) ? 0 : reader.GetInt32(oOrdenSubModulo),
+                        estadosubmodulo = reader.IsDBNull(oEstadoSubModulo) ? 0 : reader.GetInt32(oEstadoSubModulo),
+                        idperfilsubmodulo = reader.IsDBNull(oIdPerfilSubModulo) ? 0 : reader.GetInt32(oIdPerfilSubModulo),
+                        nombreperfilsubmodulo = reader.IsDBNull(oNombrePerfilSubModulo) ? null : reader.GetString(oNombrePerfilSubModulo),
+                        items = new List<ItemModuloDTOResponse>()
+                    };
 
-                                if (!moduloDictionary.ContainsKey(idmodulo))
-                                {
-                                    ModuloDTOResponse module = new ModuloDTOResponse
-                                    {
-                                        idmodulo = idmodulo,
-                                        nombremodulo = reader.IsDBNull(reader.GetOrdinal("nombremodulo")) ? null : reader.GetString(reader.GetOrdinal("nombremodulo")),
-                                        iconomodulo = reader.IsDBNull(reader.GetOrdinal("iconomodulo")) ? null : reader.GetString(reader.GetOrdinal("iconomodulo")),
-                                        rutamodulo = reader.IsDBNull(reader.GetOrdinal("rutamodulo")) ? null : reader.GetString(reader.GetOrdinal("rutamodulo")),
-                                        nivelmodulo = reader.IsDBNull(reader.GetOrdinal("nivelmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("nivelmodulo")),
-                                        ordenmodulo = reader.IsDBNull(reader.GetOrdinal("ordenmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("ordenmodulo")),
-                                        estadomodulo = reader.IsDBNull(reader.GetOrdinal("estadomodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("estadomodulo")),
-                                        idperfilmodulo = reader.IsDBNull(reader.GetOrdinal("idperfilmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("idperfilsubmodulo")),
-                                        nombreperfilmodulo = reader.IsDBNull(reader.GetOrdinal("nombreperfilmodulo")) ? null : reader.GetString(reader.GetOrdinal("nombreperfilmodulo")),
-                                        submodules = new List<SubModuloDTOResponse>()
-                                    };
+                    var item = new ItemModuloDTOResponse
+                    {
+                        iditemmodulo = reader.IsDBNull(oIdItem) ? 0 : reader.GetInt32(oIdItem),
+                        nombreitemmodulo = reader.IsDBNull(oNombreItem) ? null : reader.GetString(oNombreItem),
+                        iconoitemmodulo = reader.IsDBNull(oIconoItem) ? null : reader.GetString(oIconoItem),
+                        rutaitemmodulo = reader.IsDBNull(oRutaItem) ? null : reader.GetString(oRutaItem),
+                        nivelitemmodulo = reader.IsDBNull(oNivelItem) ? 0 : reader.GetInt32(oNivelItem),
+                        ordenitemmodulo = reader.IsDBNull(oOrdenItem) ? 0 : reader.GetInt32(oOrdenItem),
+                        estadoitemmodulo = reader.IsDBNull(oEstadoItem) ? 0 : reader.GetInt32(oEstadoItem),
+                        idperfilitemmodulo = reader.IsDBNull(oIdPerfilItem) ? 0 : reader.GetInt32(oIdPerfilItem),
+                        nombreperfilitemmodulo = reader.IsDBNull(oNombrePerfilItem) ? null : reader.GetString(oNombrePerfilItem)
+                    };
 
-                                    moduloDictionary.Add(idmodulo, module);
-                                }
-
-                                SubModuloDTOResponse submodule = new SubModuloDTOResponse
-                                {
-                                    idsubmodulo = reader.IsDBNull(reader.GetOrdinal("idsubmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("idsubmodulo")),
-                                    nombresubmodulo = reader.IsDBNull(reader.GetOrdinal("nombresubmodulo")) ? null : reader.GetString(reader.GetOrdinal("nombresubmodulo")),
-                                    iconosubmodulo = reader.IsDBNull(reader.GetOrdinal("iconosubmodulo")) ? null : reader.GetString(reader.GetOrdinal("iconosubmodulo")),
-                                    rutasubmodulo = reader.IsDBNull(reader.GetOrdinal("rutasubmodulo")) ? null : reader.GetString(reader.GetOrdinal("rutasubmodulo")),
-                                    nivelsubmodulo = reader.IsDBNull(reader.GetOrdinal("nivelsubmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("nivelsubmodulo")),
-                                    ordensubmodulo = reader.IsDBNull(reader.GetOrdinal("ordensubmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("ordensubmodulo")),
-                                    estadosubmodulo = reader.IsDBNull(reader.GetOrdinal("estadosubmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("estadosubmodulo")),
-                                    idperfilsubmodulo = reader.IsDBNull(reader.GetOrdinal("idperfilsubmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("idperfilsubmodulo")),
-                                    nombreperfilsubmodulo = reader.IsDBNull(reader.GetOrdinal("nombreperfilsubmodulo")) ? null : reader.GetString(reader.GetOrdinal("nombreperfilsubmodulo")),
-                                    items = new List<ItemModuloDTOResponse>()
-                                };
-
-                                ItemModuloDTOResponse item = new ItemModuloDTOResponse
-                                {
-                                    iditemmodulo = reader.IsDBNull(reader.GetOrdinal("iditemmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("iditemmodulo")),
-                                    nombreitemmodulo = reader.IsDBNull(reader.GetOrdinal("nombreitemmodulo")) ? null : reader.GetString(reader.GetOrdinal("nombreitemmodulo")),
-                                    iconoitemmodulo = reader.IsDBNull(reader.GetOrdinal("iconoitemmodulo")) ? null : reader.GetString(reader.GetOrdinal("iconoitemmodulo")),
-                                    rutaitemmodulo = reader.IsDBNull(reader.GetOrdinal("rutaitemmodulo")) ? null : reader.GetString(reader.GetOrdinal("rutaitemmodulo")),
-                                    nivelitemmodulo = reader.IsDBNull(reader.GetOrdinal("nivelitemmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("nivelitemmodulo")),
-                                    ordenitemmodulo = reader.IsDBNull(reader.GetOrdinal("ordenitemmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("ordenitemmodulo")),
-                                    estadoitemmodulo = reader.IsDBNull(reader.GetOrdinal("estadoitemmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("estadoitemmodulo")),
-                                    idperfilitemmodulo = reader.IsDBNull(reader.GetOrdinal("idperfilitemmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("idperfilitemmodulo")),
-                                    nombreperfilitemmodulo = reader.IsDBNull(reader.GetOrdinal("nombreperfilitemmodulo")) ? null : reader.GetString(reader.GetOrdinal("nombreperfilitemmodulo")),
-                                };
-
-                                ModuloDTOResponse currentModule = moduloDictionary[idmodulo];
-                                var existingSubmodule = currentModule.submodules.FirstOrDefault(s => s.idsubmodulo == submodule.idsubmodulo);
-                                if (existingSubmodule != null)
-                                {
-                                    existingSubmodule.items.Add(item);
-                                }
-                                else
-                                {
-                                    currentModule.submodules.Add(submodule);
-                                    submodule.items.Add(item);
-                                }
-                            }
-
-                            permissions.AddRange(moduloDictionary.Values);
-                        }
+                    // Agregar al árbol (evita duplicar submódulos)
+                    var existingSubmodule = module.submodules.FirstOrDefault(s => s.idsubmodulo == submodule.idsubmodulo);
+                    if (existingSubmodule != null)
+                    {
+                        existingSubmodule.items.Add(item);
+                    }
+                    else
+                    {
+                        module.submodules.Add(submodule);
+                        submodule.items.Add(item);
                     }
                 }
+
+                permissions.AddRange(moduloDictionary.Values);
             }
-            catch (Exception ex)
+            catch (Npgsql.NpgsqlException npgEx)
             {
-                // Manejar la excepción
-                Console.WriteLine("Error: " + ex.Message);
-                throw; // O devuelve algún tipo de indicación de error adecuada
+                Console.WriteLine($"PostgreSQL error [{npgEx.SqlState}]: {npgEx.Message}");
+                throw;
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine($"Error en GetPermissions: {ex.Message}\n{ex.StackTrace}");
+                throw;
             }
 
             return permissions;
         }
 
-        public async Task<IdCodigo> GetIdCodigo(CodigosRequest request)
+        public async Task<IdCodigo?> GetIdCodigo(CodigosRequest request)
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
-                {
-                    await connection.OpenAsync();
+                // Si tu función es RETURNS TABLE (...) usamos SELECT ... LIMIT 1
+                const string sql = @"
+                                    SELECT idemppaisnegcue
+                                    FROM intranet.usp_getidemppaisnegcue(@idpais, @idempresa, @idnegocio, @idcuenta)
+                                    LIMIT 1;";
 
-                    using (SqlCommand command = new SqlCommand("USP_GETIDEMPPAISNEGCUE", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.Add("@idpais", SqlDbType.Int, 15).Value = request.idpais;
-                        command.Parameters.Add("@idempresa", SqlDbType.Int, 15).Value = request.idempresa;
-                        command.Parameters.Add("@idnegocio", SqlDbType.Int, 15).Value = request.idnegocio;
-                        command.Parameters.Add("@idcuenta", SqlDbType.Int, 15).Value = request.idcuenta;
+                await using var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+                await connection.OpenAsync();
 
+                await using var command = new NpgsqlCommand(sql, connection);
+                command.Parameters.AddWithValue("idpais", NpgsqlDbType.Integer, request.idpais);
+                command.Parameters.AddWithValue("idempresa", NpgsqlDbType.Integer, request.idempresa);
+                command.Parameters.AddWithValue("idnegocio", NpgsqlDbType.Integer, request.idnegocio);
+                command.Parameters.AddWithValue("idcuenta", NpgsqlDbType.Integer, request.idcuenta);
 
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                        {
-                            if (await reader.ReadAsync())  // Mueve el lector a la primera fila
-                            {
-                                IdCodigo idemppaisnegcue = new IdCodigo
-                                {
-                                    idemppaisnegcue = Convert.ToInt32(reader["idemppaisnegcue"]) // Asegúrate de que haya datos antes de leer
-                                };
-                                return idemppaisnegcue;
-                            }
-                            else
-                            {
-                                return null; // No se encontraron resultados, retorna null
-                            }
-                        }
-                    }
-                }
+                var scalar = await command.ExecuteScalarAsync();
+
+                if (scalar == null || scalar is DBNull)
+                    return null;
+
+                return new IdCodigo { idemppaisnegcue = Convert.ToInt32(scalar) };
+            }
+            catch (NpgsqlException npgEx)
+            {
+                Console.WriteLine($"PostgreSQL error [{npgEx.SqlState}]: {npgEx.Message}");
+                throw;
             }
             catch (Exception ex)
             {
-                // Manejo de errores
-                Console.WriteLine("Error en Obtener Idcodigo: " + ex.Message);
-                throw; // Lanzar excepción para que la capa superior maneje el error
+                Console.WriteLine($"Error en GetIdCodigo: {ex.Message}\n{ex.StackTrace}");
+                throw;
             }
         }
 
 
-        public async Task<IdCodigo> GetIdpdv(CodigosRequest request)
+        public async Task<IdCodigo?> GetIdpdv(CodigosRequest request)
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
-                {
-                    await connection.OpenAsync();
+                const string sql = @"
+                                    SELECT intranet.usp_getidpdvrol(@usuario, @idemppaisnegcue) AS idpdv;";
 
-                    using (SqlCommand command = new SqlCommand("USP_GETIDPDVROL", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.Add("@idemppaisnegcue", SqlDbType.Int).Value = request.idemppaisnegcue;
-                        command.Parameters.Add("@usuario", SqlDbType.VarChar, 15).Value = request.usuario;
-                
+                await using var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+                await connection.OpenAsync();
 
+                await using var command = new NpgsqlCommand(sql, connection);
+                command.Parameters.AddWithValue("usuario", NpgsqlDbType.Varchar, (object?)request.usuario ?? DBNull.Value);
+                command.Parameters.AddWithValue("idemppaisnegcue", NpgsqlDbType.Integer, request.idemppaisnegcue);
 
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                        {
-                            if (await reader.ReadAsync())  // Mueve el lector a la primera fila
-                            {
-                                IdCodigo idpdv = new IdCodigo
-                                {
-                                    idpdv = Convert.ToInt32(reader["idpdv"]) // Asegúrate de que haya datos antes de leer
-                                };
-                                return idpdv;
-                            }
-                            else
-                            {
-                                return null; // No se encontraron resultados, retorna null
-                            }
-                        }
-                    }
-                }
+                var scalar = await command.ExecuteScalarAsync();
+
+                if (scalar == null || scalar is DBNull)
+                    return null;
+
+                return new IdCodigo { idpdv = Convert.ToInt32(scalar) };
+            }
+            catch (Npgsql.NpgsqlException npgEx)
+            {
+                Console.WriteLine($"PostgreSQL error [{npgEx.SqlState}]: {npgEx.Message}");
+                throw;
             }
             catch (Exception ex)
             {
-                // Manejo de errores
-                Console.WriteLine("Error en Obtener Idcodigo: " + ex.Message);
-                throw; // Lanzar excepción para que la capa superior maneje el error
+                Console.WriteLine($"Error en GetIdpdv: {ex.Message}\n{ex.StackTrace}");
+                throw;
             }
         }
 
-        
 
+        //NO SE USA
         public List<RETAIL_AsistenciaBE> GetMarcacionPromotor(string usuario)
         {
 
@@ -471,43 +496,35 @@ namespace RombiBack.Security.Auth.Repsitory
             return lista;
         }
 
-
-
-
-
         public async Task<string> GetRutaPrincipal(int idemppaisnegcue)
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
-                {
-                    await connection.OpenAsync();
+                const string sql = @"
+                                    SELECT ruta
+                                    FROM intranet.usp_getrutaprincipal(@idemppaisnegcue)
+                                    LIMIT 1;";
 
-                    using (SqlCommand command = new SqlCommand("USP_GETRUTAPRINCIPAL", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.Add("@idemppaisnegcue", SqlDbType.Int).Value = idemppaisnegcue;
+                await using var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+                await connection.OpenAsync();
 
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                        {
-                            if (await reader.ReadAsync())
-                            {
-                                return !reader.IsDBNull(reader.GetOrdinal("ruta"))
-                                    ? reader.GetString(reader.GetOrdinal("ruta"))
-                                    : string.Empty; // Retorna "" si el campo es NULL
-                            }
-                            return string.Empty; // Retorna "" si no hay registros
-                        }
-                    }
-                }
+                await using var command = new NpgsqlCommand(sql, connection);
+                command.Parameters.AddWithValue("idemppaisnegcue", NpgsqlDbType.Integer, idemppaisnegcue);
+
+                var scalar = await command.ExecuteScalarAsync();
+                return scalar == null || scalar is DBNull ? string.Empty : (string)scalar;
+            }
+            catch (NpgsqlException npgEx)
+            {
+                Console.WriteLine($"PostgreSQL error [{npgEx.SqlState}]: {npgEx.Message}");
+                throw;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error en GetRutaPrincipal: " + ex.Message);
+                Console.WriteLine($"Error en GetRutaPrincipal: {ex.Message}\n{ex.StackTrace}");
                 throw;
             }
         }
-
 
 
         //public async Task<UserAuth> ValidateUser(UserDTORequest request)
