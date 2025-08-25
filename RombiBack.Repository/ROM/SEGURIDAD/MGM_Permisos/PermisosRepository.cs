@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Npgsql;
+using NpgsqlTypes;
 using RombiBack.Abstraction;
 using RombiBack.Entities.ROM.ENTEL_RETAIL.Models.PlanificacionHorarios;
 using RombiBack.Entities.ROM.SEGURIDAD.Models.Perfiles;
@@ -24,43 +26,56 @@ namespace RombiBack.Repository.ROM.SEGURIDAD.MGM_Permisos
         {
             _dbConnection = dbConnection;
         }
+
         public async Task<List<CodigosResponse>> GetCodigos(CodigosRequest request)
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
+                // OJO: usa tu cadena de conexión a Postgres
+                // Ej.: Host=...;Port=5432;Database=...;Username=...;Password=...
+                using (var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI()))
                 {
                     await connection.OpenAsync();
 
-                    using (SqlCommand command = new SqlCommand("USP_GETCODIGOS", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.Add("@idempresa", SqlDbType.Int).Value = request.idempresa;
-                        command.Parameters.Add("@idpais", SqlDbType.Int).Value = request.idpais;
-                        command.Parameters.Add("@idnegocio", SqlDbType.Int).Value = request.idnegocio ?? (object)DBNull.Value;
-                        command.Parameters.Add("@idcuenta", SqlDbType.Int).Value = request.idcuenta ?? (object)DBNull.Value;
+                    // En Postgres las "SP" las migramos a funciones: se invocan con SELECT
+                    const string sql = @"
+                SELECT *
+                FROM intranet.usp_getcodigos(@idempresa, @idpais, @idnegocio, @idcuenta);";
 
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    using (var command = new NpgsqlCommand(sql, connection))
+                    {
+                        // Parámetros requeridos
+                        command.Parameters.AddWithValue("idempresa", NpgsqlDbType.Integer, request.idempresa);
+                        command.Parameters.AddWithValue("idpais", NpgsqlDbType.Integer, request.idpais);
+
+                        // Parámetros opcionales (NULL cuando no vienen)
+                        command.Parameters.Add("idnegocio", NpgsqlDbType.Integer).Value =
+                            (object?)request.idnegocio ?? DBNull.Value;
+
+                        command.Parameters.Add("idcuenta", NpgsqlDbType.Integer).Value =
+                            (object?)request.idcuenta ?? DBNull.Value;
+
+                        using (var reader = await command.ExecuteReaderAsync())
                         {
-                            List<CodigosResponse> response = new List<CodigosResponse>();
+                            var response = new List<CodigosResponse>();
 
                             while (await reader.ReadAsync())
                             {
-                                CodigosResponse codigoResponse = new CodigosResponse
+                                var item = new CodigosResponse
                                 {
-                                    idemppaisnegcue = reader["idemppaisnegcue"] != DBNull.Value ? reader.GetInt32(reader.GetOrdinal("idemppaisnegcue")) : 0,
-                                    idempresa = reader["idempresa"] != DBNull.Value ? reader.GetInt32(reader.GetOrdinal("idempresa")) : 0,
-                                    nombreempresa = reader["nombreempresa"]?.ToString() ?? "",
-                                    idpais = reader["idpais"] != DBNull.Value ? reader.GetInt32(reader.GetOrdinal("idpais")) : 0,
-                                    nombrepais = reader["nombrepais"]?.ToString() ?? "",
-                                    idnegocio = reader["idnegocio"] != DBNull.Value ? reader.GetInt32(reader.GetOrdinal("idnegocio")) : 0,
-                                    nombrenegocio = reader["nombrenegocio"]?.ToString() ?? "",
-                                    idcuenta = reader["idcuenta"] != DBNull.Value ? reader.GetInt32(reader.GetOrdinal("idcuenta")) : 0,
-                                    nombrecuenta = reader["nombrecuenta"]?.ToString() ?? "",
-                                    estado = reader["estado"] != DBNull.Value ? Convert.ToInt32(reader["estado"]) : 0
+                                    idemppaisnegcue = reader.IsDBNull(reader.GetOrdinal("idemppaisnegcue")) ? 0 : reader.GetInt32(reader.GetOrdinal("idemppaisnegcue")),
+                                    idempresa = reader.IsDBNull(reader.GetOrdinal("idempresa")) ? 0 : reader.GetInt32(reader.GetOrdinal("idempresa")),
+                                    nombreempresa = reader["nombreempresa"] as string ?? string.Empty,
+                                    idpais = reader.IsDBNull(reader.GetOrdinal("idpais")) ? 0 : reader.GetInt32(reader.GetOrdinal("idpais")),
+                                    nombrepais = reader["nombrepais"] as string ?? string.Empty,
+                                    idnegocio = reader.IsDBNull(reader.GetOrdinal("idnegocio")) ? 0 : reader.GetInt32(reader.GetOrdinal("idnegocio")),
+                                    nombrenegocio = reader["nombrenegocio"] as string ?? string.Empty,
+                                    idcuenta = reader.IsDBNull(reader.GetOrdinal("idcuenta")) ? 0 : reader.GetInt32(reader.GetOrdinal("idcuenta")),
+                                    nombrecuenta = reader["nombrecuenta"] as string ?? string.Empty,
+                                    estado = reader.IsDBNull(reader.GetOrdinal("estado")) ? 0 : reader.GetInt32(reader.GetOrdinal("estado"))
                                 };
 
-                                response.Add(codigoResponse);
+                                response.Add(item);
                             }
 
                             return response;
@@ -74,51 +89,68 @@ namespace RombiBack.Repository.ROM.SEGURIDAD.MGM_Permisos
                 throw;
             }
         }
+
         public async Task<List<AllUsersResponse>> GetAllUsers(AllUsersRequest request)
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
+                using (var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI()))
                 {
                     await connection.OpenAsync();
 
-                    using (SqlCommand command = new SqlCommand("USP_GETALLUSERS", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.Add("@idempresa", SqlDbType.Int).Value = request.idempresa ?? (object)DBNull.Value;
-                        command.Parameters.Add("@idpais", SqlDbType.Int).Value = request.idpais ?? (object)DBNull.Value;
-                        command.Parameters.Add("@idnegocio", SqlDbType.Int).Value = request.idnegocio ?? (object)DBNull.Value;
-                        command.Parameters.Add("@idcuenta", SqlDbType.Int).Value = request.idcuenta ?? (object)DBNull.Value;
-                        command.Parameters.Add("@usuario", SqlDbType.VarChar).Value = request.usuario ?? (object)DBNull.Value;
+                    // Postgres: llamar la función como SELECT
+                    const string sql = @"
+                SELECT *
+                FROM intranet.usp_getallusers(
+                    @idempresa, @idpais, @idnegocio, @idcuenta, @usuario
+                );";
 
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    using (var command = new NpgsqlCommand(sql, connection))
+                    {
+                        // parámetros, cuidando NULL
+                        command.Parameters.Add("idempresa", NpgsqlDbType.Integer).Value =
+                            (object?)request.idempresa ?? DBNull.Value;
+
+                        command.Parameters.Add("idpais", NpgsqlDbType.Integer).Value =
+                            (object?)request.idpais ?? DBNull.Value;
+
+                        command.Parameters.Add("idnegocio", NpgsqlDbType.Integer).Value =
+                            (object?)request.idnegocio ?? DBNull.Value;
+
+                        command.Parameters.Add("idcuenta", NpgsqlDbType.Integer).Value =
+                            (object?)request.idcuenta ?? DBNull.Value;
+
+                        command.Parameters.Add("usuario", NpgsqlDbType.Varchar).Value =
+                            (object?)request.usuario ?? DBNull.Value;
+
+                        using (var reader = await command.ExecuteReaderAsync())
                         {
-                            List<AllUsersResponse> response = new List<AllUsersResponse>();
+                            var response = new List<AllUsersResponse>();
 
                             while (await reader.ReadAsync())
                             {
-                                AllUsersResponse allusersResponse = new AllUsersResponse
+                                var item = new AllUsersResponse
                                 {
                                     idusuario = reader.GetInt32(reader.GetOrdinal("idusuario")),
-                                    docusuario = reader.GetString(reader.GetOrdinal("docusuario")),
-                                    nombrecompleto = reader.GetString(reader.GetOrdinal("nombrecompleto")),
-                                    nombres = reader.GetString(reader.GetOrdinal("nombres")),
-                                    apellidopaterno = reader.GetString(reader.GetOrdinal("apellidopaterno")),
-                                    apellidomaterno = reader.GetString(reader.GetOrdinal("apellidomaterno")),
-                                    correo = reader.GetString(reader.GetOrdinal("correo")),
-                                    usuario = reader.GetString(reader.GetOrdinal("usuario")),
-                                    idempresa = reader.GetInt32(reader.GetOrdinal("idempresa")),
-                                    nombreempresa = reader.GetString(reader.GetOrdinal("nombreempresa")),
-                                    idpais = reader.GetInt32(reader.GetOrdinal("idpais")),
-                                    nombrepais = reader.GetString(reader.GetOrdinal("nombrepais")),
-                                    idnegocio = reader.GetInt32(reader.GetOrdinal("idnegocio")),
-                                    nombrenegocio = reader.GetString(reader.GetOrdinal("nombrenegocio")),
-                                    idcuenta = reader.GetInt32(reader.GetOrdinal("idcuenta")),
-                                    nombrecuenta = reader.GetString(reader.GetOrdinal("nombrecuenta")),
+                                    docusuario = reader["docusuario"]?.ToString() ?? "",
+                                    nombrecompleto = reader["nombrecompleto"]?.ToString() ?? "",
+                                    nombres = reader["nombres"]?.ToString() ?? "",
+                                    apellidopaterno = reader["apellidopaterno"]?.ToString() ?? "",
+                                    apellidomaterno = reader["apellidomaterno"]?.ToString() ?? "",
+                                    correo = reader["correo"]?.ToString() ?? "",
+                                    usuario = reader["usuario_out"]?.ToString() ?? "",   // ⚠️ en la función lo aliaste "usuario_out"
+                                    idempresa = reader.GetInt32(reader.GetOrdinal("idempresa_out")),
+                                    nombreempresa = reader["nombreempresa"]?.ToString() ?? "",
+                                    idpais = reader.GetInt32(reader.GetOrdinal("idpais_out")),
+                                    nombrepais = reader["nombrepais"]?.ToString() ?? "",
+                                    idnegocio = reader.GetInt32(reader.GetOrdinal("idnegocio_out")),
+                                    nombrenegocio = reader["nombrenegocio"]?.ToString() ?? "",
+                                    idcuenta = reader.GetInt32(reader.GetOrdinal("idcuenta_out")),
+                                    nombrecuenta = reader["nombrecuenta"]?.ToString() ?? "",
                                     estado = reader.GetInt32(reader.GetOrdinal("estado"))
                                 };
 
-                                response.Add(allusersResponse);
+                                response.Add(item);
                             }
 
                             return response;
@@ -136,76 +168,95 @@ namespace RombiBack.Repository.ROM.SEGURIDAD.MGM_Permisos
 
         public async Task<List<ModuloDTOResponse>> GetModulosPermisos(UserDTORequest request)
         {
-            List<ModuloDTOResponse> permissions = new List<ModuloDTOResponse>();
+            var permissions = new List<ModuloDTOResponse>();
 
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
+                using (var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI()))
                 {
                     await connection.OpenAsync();
 
-                    using (SqlCommand command = new SqlCommand("USP_GETMODULOSPERMISOS", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.Add("@IDPAIS", SqlDbType.VarChar, 50).Value = request.idpais;
-                        command.Parameters.Add("@IDEMPRESA", SqlDbType.VarChar, 50).Value = request.idempresa;
-                        command.Parameters.Add("@IDNEGOCIO", SqlDbType.VarChar, 50).Value = request.idnegocio;
-                        command.Parameters.Add("@IDCUENTA", SqlDbType.VarChar, 50).Value = request.idcuenta;
-                        command.Parameters.Add("@USUARIO", SqlDbType.VarChar, 50).Value = request.user;
+                    const string sql = @"
+                SELECT *
+                FROM intranet.usp_getmodulospermisos(
+                    @idpais, @idempresa, @idnegocio, @idcuenta, @usuario
+                );";
 
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    using (var command = new NpgsqlCommand(sql, connection))
+                    {
+                        command.Parameters.Add("idpais", NpgsqlDbType.Integer).Value = request.idpais;
+                        command.Parameters.Add("idempresa", NpgsqlDbType.Integer).Value = request.idempresa;
+                        command.Parameters.Add("idnegocio", NpgsqlDbType.Integer).Value = request.idnegocio;
+                        command.Parameters.Add("idcuenta", NpgsqlDbType.Integer).Value = request.idcuenta;
+                        command.Parameters.Add("usuario", NpgsqlDbType.Varchar).Value = request.user;
+
+                        using (var reader = await command.ExecuteReaderAsync())
                         {
-                            Dictionary<int, ModuloDTOResponse> moduloDictionary = new Dictionary<int, ModuloDTOResponse>();
+                            var moduloDictionary = new Dictionary<int, ModuloDTOResponse>();
 
                             while (await reader.ReadAsync())
                             {
-                                int idmodulo = reader.IsDBNull(reader.GetOrdinal("idmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("idmodulo"));
+                                int idmodulo = reader.IsDBNull(reader.GetOrdinal("idmodulo"))
+                                    ? 0 : reader.GetInt32(reader.GetOrdinal("idmodulo"));
 
                                 if (!moduloDictionary.ContainsKey(idmodulo))
                                 {
-                                    ModuloDTOResponse module = new ModuloDTOResponse
+                                    var module = new ModuloDTOResponse
                                     {
                                         idmodulo = idmodulo,
-                                        idcodmod = reader.IsDBNull(reader.GetOrdinal("idcodmod")) ? null : reader.GetInt32(reader.GetOrdinal("idcodmod")),
-
-                                        nombremodulo = reader.IsDBNull(reader.GetOrdinal("nombremodulo")) ? null : reader.GetString(reader.GetOrdinal("nombremodulo")),
-                                        estadomodulopermiso = reader.IsDBNull(reader.GetOrdinal("estadomodulopermiso")) ? null : reader.GetString(reader.GetOrdinal("estadomodulopermiso")),
-                                        idperfilmodulo = reader.IsDBNull(reader.GetOrdinal("idperfilmodulo")) ? null : reader.GetInt32(reader.GetOrdinal("idperfilmodulo")),
-                                        rutamodulo = reader.IsDBNull(reader.GetOrdinal("rutamodulo")) ? null : reader.GetString(reader.GetOrdinal("rutamodulo")),
-
+                                        idcodmod = reader.IsDBNull(reader.GetOrdinal("idcodmod"))
+                                            ? (int?)null : reader.GetInt32(reader.GetOrdinal("idcodmod")),
+                                        nombremodulo = reader.IsDBNull(reader.GetOrdinal("nombremodulo"))
+                                            ? null : reader.GetString(reader.GetOrdinal("nombremodulo")),
+                                        estadomodulopermiso = reader.IsDBNull(reader.GetOrdinal("estadomodulopermiso"))
+                                            ? null : reader.GetString(reader.GetOrdinal("estadomodulopermiso")),
+                                        idperfilmodulo = reader.IsDBNull(reader.GetOrdinal("idperfilmodulo"))
+                                            ? (int?)null : reader.GetInt32(reader.GetOrdinal("idperfilmodulo")),
+                                        rutamodulo = reader.IsDBNull(reader.GetOrdinal("rutamodulo"))
+                                            ? null : reader.GetString(reader.GetOrdinal("rutamodulo")),
                                         submodules = new List<SubModuloDTOResponse>()
                                     };
 
                                     moduloDictionary.Add(idmodulo, module);
                                 }
 
-                                SubModuloDTOResponse submodule = new SubModuloDTOResponse
+                                var submodule = new SubModuloDTOResponse
                                 {
-                                    idsubmodulo = reader.IsDBNull(reader.GetOrdinal("idsubmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("idsubmodulo")),
-                                    idcodmodsubmod = reader.IsDBNull(reader.GetOrdinal("idcodmodsubmod")) ? null : reader.GetInt32(reader.GetOrdinal("idcodmodsubmod")),
-
-                                    nombresubmodulo = reader.IsDBNull(reader.GetOrdinal("nombresubmodulo")) ? null : reader.GetString(reader.GetOrdinal("nombresubmodulo")),                                  
-                                    estadosubmodulopermiso = reader.IsDBNull(reader.GetOrdinal("estadosubmodulopermiso")) ? null : reader.GetString(reader.GetOrdinal("estadosubmodulopermiso")),
-                                    idperfilsubmodulo = reader.IsDBNull(reader.GetOrdinal("idperfilsubmodulo")) ? null : reader.GetInt32(reader.GetOrdinal("idperfilsubmodulo")),
-                                    rutasubmodulo = reader.IsDBNull(reader.GetOrdinal("rutasubmodulo")) ? null : reader.GetString(reader.GetOrdinal("rutasubmodulo")),
-
+                                    idsubmodulo = reader.IsDBNull(reader.GetOrdinal("idsubmodulo"))
+                                        ? 0 : reader.GetInt32(reader.GetOrdinal("idsubmodulo")),
+                                    idcodmodsubmod = reader.IsDBNull(reader.GetOrdinal("idcodmodsubmod"))
+                                        ? (int?)null : reader.GetInt32(reader.GetOrdinal("idcodmodsubmod")),
+                                    nombresubmodulo = reader.IsDBNull(reader.GetOrdinal("nombresubmodulo"))
+                                        ? null : reader.GetString(reader.GetOrdinal("nombresubmodulo")),
+                                    estadosubmodulopermiso = reader.IsDBNull(reader.GetOrdinal("estadosubmodulopermiso"))
+                                        ? null : reader.GetString(reader.GetOrdinal("estadosubmodulopermiso")),
+                                    idperfilsubmodulo = reader.IsDBNull(reader.GetOrdinal("idperfilsubmodulo"))
+                                        ? (int?)null : reader.GetInt32(reader.GetOrdinal("idperfilsubmodulo")),
+                                    rutasubmodulo = reader.IsDBNull(reader.GetOrdinal("rutasubmodulo"))
+                                        ? null : reader.GetString(reader.GetOrdinal("rutasubmodulo")),
                                     items = new List<ItemModuloDTOResponse>()
                                 };
 
-                                ItemModuloDTOResponse item = new ItemModuloDTOResponse
+                                var item = new ItemModuloDTOResponse
                                 {
-                                    iditemmodulo = reader.IsDBNull(reader.GetOrdinal("iditemmodulo")) ? 0 : reader.GetInt32(reader.GetOrdinal("iditemmodulo")),
-                                    idcodmodsubmoditemmod = reader.IsDBNull(reader.GetOrdinal("idcodmodsubmoditemmod")) ? null : reader.GetInt32(reader.GetOrdinal("idcodmodsubmoditemmod")),
-
-                                    nombreitemmodulo = reader.IsDBNull(reader.GetOrdinal("nombreitemmodulo")) ? null : reader.GetString(reader.GetOrdinal("nombreitemmodulo")),
-                                    estadoitemmodulopermiso = reader.IsDBNull(reader.GetOrdinal("estadoitemmodulopermiso")) ? null : reader.GetString(reader.GetOrdinal("estadoitemmodulopermiso")),
-                                    idperfilitemmodulo = reader.IsDBNull(reader.GetOrdinal("idperfilitemmodulo")) ? null : reader.GetInt32(reader.GetOrdinal("idperfilitemmodulo")),
-                                    rutaitemmodulo = reader.IsDBNull(reader.GetOrdinal("rutaitemmodulo")) ? null : reader.GetString(reader.GetOrdinal("rutaitemmodulo")),
-
+                                    iditemmodulo = reader.IsDBNull(reader.GetOrdinal("iditemmodulo"))
+                                        ? 0 : reader.GetInt32(reader.GetOrdinal("iditemmodulo")),
+                                    idcodmodsubmoditemmod = reader.IsDBNull(reader.GetOrdinal("idcodmodsubmoditemmod"))
+                                        ? (int?)null : reader.GetInt32(reader.GetOrdinal("idcodmodsubmoditemmod")),
+                                    nombreitemmodulo = reader.IsDBNull(reader.GetOrdinal("nombreitemmodulo"))
+                                        ? null : reader.GetString(reader.GetOrdinal("nombreitemmodulo")),
+                                    estadoitemmodulopermiso = reader.IsDBNull(reader.GetOrdinal("estadoitemmodulopermiso"))
+                                        ? null : reader.GetString(reader.GetOrdinal("estadoitemmodulopermiso")),
+                                    idperfilitemmodulo = reader.IsDBNull(reader.GetOrdinal("idperfilitemmodulo"))
+                                        ? (int?)null : reader.GetInt32(reader.GetOrdinal("idperfilitemmodulo")),
+                                    rutaitemmodulo = reader.IsDBNull(reader.GetOrdinal("rutaitemmodulo"))
+                                        ? null : reader.GetString(reader.GetOrdinal("rutaitemmodulo"))
                                 };
 
-                                ModuloDTOResponse currentModule = moduloDictionary[idmodulo];
-                                var existingSubmodule = currentModule.submodules.FirstOrDefault(s => s.idsubmodulo == submodule.idsubmodulo);
+                                var currentModule = moduloDictionary[idmodulo];
+                                var existingSubmodule = currentModule.submodules
+                                    .FirstOrDefault(s => s.idsubmodulo == submodule.idsubmodulo);
+
                                 if (existingSubmodule != null)
                                 {
                                     existingSubmodule.items.Add(item);
@@ -224,13 +275,11 @@ namespace RombiBack.Repository.ROM.SEGURIDAD.MGM_Permisos
             }
             catch (Exception ex)
             {
-                // Manejar la excepción
                 Console.WriteLine("Error: " + ex.Message);
-                throw; // O devuelve algún tipo de indicación de error adecuada
+                throw;
             }
 
             return permissions;
-
         }
 
 
@@ -238,86 +287,95 @@ namespace RombiBack.Repository.ROM.SEGURIDAD.MGM_Permisos
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
+                using (var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI()))
                 {
                     await connection.OpenAsync();
 
-                    using (SqlCommand command = new SqlCommand("USP_GETPERFILES", connection))
+                    const string sql = @"SELECT idperfiles, nombre FROM intranet.usp_getperfiles();";
+
+                    using (var command = new NpgsqlCommand(sql, connection))
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        command.CommandType = CommandType.StoredProcedure;
+                        var response = new List<Perfiles>();
 
-
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                        while (await reader.ReadAsync())
                         {
-                            if (reader.HasRows)
+                            var perf = new Perfiles
                             {
-                                List<Perfiles> response = new List<Perfiles>();
+                                idperfiles = reader.GetInt32(reader.GetOrdinal("idperfiles")),
+                                nombre = reader.IsDBNull(reader.GetOrdinal("nombre"))
+                                             ? string.Empty
+                                             : reader.GetString(reader.GetOrdinal("nombre"))
+                            };
 
-                                while (await reader.ReadAsync())
-                                {
-                                    Perfiles perf = new Perfiles();
-                                    perf.idperfiles = reader.GetInt32(reader.GetOrdinal("idperfiles"));
-                                    perf.nombre = reader.GetString(reader.GetOrdinal("nombre"));
-
-                                    response.Add(perf);
-                                }
-
-                                return response;
-                            }
-                            else
-                            {
-                                // No se encontraron resultados
-                                return new List<Perfiles>(); // Devuelve una lista vacía en lugar de null
-                            }
+                            response.Add(perf);
                         }
+
+                        return response; // si no hay filas, vuelve lista vacía
                     }
                 }
             }
             catch
             {
-                return null;
+                return null; // conserva tu contrato actual
             }
         }
 
         public async Task<List<Respuesta>> ValidarEstructuraModulos(List<PermisosModulosRequest> requests)
         {
-            List<Respuesta> respuestas = new List<Respuesta>();
+            var respuestas = new List<Respuesta>();
 
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
+                using (var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI()))
                 {
                     await connection.OpenAsync();
 
-                    foreach (var request in requests)
-                    {
-                        using (SqlCommand command = new SqlCommand("USP_VALIDARESTRUCTURAMODULOS", connection))
-                        {
-                            command.CommandType = CommandType.StoredProcedure;
-                            command.Parameters.Add("@idcodmod", SqlDbType.Int).Value = request.idcodmod;
-                            command.Parameters.Add("@idcodmodsubmod", SqlDbType.Int).Value = request.idcodmodsubmod ?? (object)DBNull.Value;
-                            command.Parameters.Add("@idcodmodsubmoditemmod", SqlDbType.Int).Value = request.idcodmodsubmoditemmod ?? (object)DBNull.Value;
-                            command.Parameters.Add("@idperfiles", SqlDbType.Int).Value = request.idperfiles;
-                            command.Parameters.Add("@usuario", SqlDbType.VarChar).Value = request.usuario;
-                            command.Parameters.Add("@idempresa", SqlDbType.Int).Value = request.idempresa;
-                            command.Parameters.Add("@idpais", SqlDbType.Int).Value = request.idpais;
-                            command.Parameters.Add("@idnegocio", SqlDbType.Int).Value = request.idnegocio ?? (object)DBNull.Value;
-                            command.Parameters.Add("@idcuenta", SqlDbType.Int).Value = request.idcuenta ?? (object)DBNull.Value;
-                            command.Parameters.Add("@checks", SqlDbType.Int).Value = request.checks;
-                            command.Parameters.Add("@usuario_creacion", SqlDbType.VarChar).Value = request.usuario_creacion;
+                    // Llamamos a la función; uso notación con nombre para evitar errores por orden
+                    const string sql = @"
+                SELECT *
+                FROM intranet.usp_validaestructuramodulos(
+                    idcodmod                => @idcodmod,
+                    idcodmodsubmod          => @idcodmodsubmod,
+                    idcodmodsubmoditemmod   => @idcodmodsubmoditemmod,
+                    idperfiles              => @idperfiles,
+                    usuario                 => @usuario,
+                    idempresa               => @idempresa,
+                    idpais                  => @idpais,
+                    idnegocio               => @idnegocio,
+                    idcuenta                => @idcuenta,
+                    checks                  => @checks,
+                    usuario_creacion        => @usuario_creacion
+                );";
 
-                            using (SqlDataReader rdr = await command.ExecuteReaderAsync())
+                    foreach (var req in requests)
+                    {
+                        using (var command = new NpgsqlCommand(sql, connection))
+                        {
+                            command.Parameters.Add("idcodmod", NpgsqlDbType.Integer).Value = req.idcodmod;
+                            command.Parameters.Add("idcodmodsubmod", NpgsqlDbType.Integer).Value = (object?)req.idcodmodsubmod ?? DBNull.Value;
+                            command.Parameters.Add("idcodmodsubmoditemmod", NpgsqlDbType.Integer).Value = (object?)req.idcodmodsubmoditemmod ?? DBNull.Value;
+                            command.Parameters.Add("idperfiles", NpgsqlDbType.Integer).Value = req.idperfiles;
+                            command.Parameters.Add("usuario", NpgsqlDbType.Varchar).Value = req.usuario ?? (object)DBNull.Value;
+                            command.Parameters.Add("idempresa", NpgsqlDbType.Integer).Value = req.idempresa;
+                            command.Parameters.Add("idpais", NpgsqlDbType.Integer).Value = req.idpais;
+                            command.Parameters.Add("idnegocio", NpgsqlDbType.Integer).Value = (object?)req.idnegocio ?? DBNull.Value;
+                            command.Parameters.Add("idcuenta", NpgsqlDbType.Integer).Value = (object?)req.idcuenta ?? DBNull.Value;
+                            command.Parameters.Add("checks", NpgsqlDbType.Integer).Value = req.checks;
+                            command.Parameters.Add("usuario_creacion", NpgsqlDbType.Varchar).Value = req.usuario_creacion ?? (object)DBNull.Value;
+
+                            using (var rdr = await command.ExecuteReaderAsync())
                             {
                                 while (await rdr.ReadAsync())
                                 {
-                                    Respuesta respuesta = new Respuesta
+                                    // La función retorna: mensaje, nombremodulos, nombreperfil (en minúsculas)
+                                    var resp = new Respuesta
                                     {
-                                        Mensaje = rdr.GetString(rdr.GetOrdinal("Mensaje")),
-                                        NombreModulos = rdr.GetString(rdr.GetOrdinal("NombreModulos")),
-                                        NombrePerfil = rdr.GetString(rdr.GetOrdinal("NombrePerfil"))
+                                        Mensaje = rdr["mensaje"]?.ToString() ?? string.Empty,
+                                        NombreModulos = rdr["nombremodulos"]?.ToString() ?? string.Empty,
+                                        NombrePerfil = rdr["nombreperfil"]?.ToString() ?? string.Empty
                                     };
-
-                                    respuestas.Add(respuesta);
+                                    respuestas.Add(resp);
                                 }
                             }
                         }
@@ -340,30 +398,55 @@ namespace RombiBack.Repository.ROM.SEGURIDAD.MGM_Permisos
 
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
+                using (var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI()))
                 {
                     await connection.OpenAsync();
 
-                    using (SqlCommand command = new SqlCommand("USP_INSERTARACTUALIZARUSUARIO", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
+                    // Alias a "Estado" y "Mensaje" para mantener tu código tal cual
+                    const string sql = @"
+                SELECT 
+                    estado_out AS ""Estado"",
+                    mensaje    AS ""Mensaje""
+                FROM intranet.usp_insertaractualizarusuario(
+                    docusuario       => @docusuario,
+                    nombres          => @nombres,
+                    apellidopaterno  => @apellidopaterno,
+                    apellidomaterno  => @apellidomaterno,
+                    usuario          => @usuario,
+                    clave            => @clave,
+                    idemppaisnegcue  => @idemppaisnegcue,
+                    estado           => @estado,
+                    usuariocreacion  => @usuariocreacion,
+                    correopersonal   => @correopersonal,
+                    correocorp       => @correocorp,
+                    celular          => @celular,
+                    sexo             => @sexo,
+                    fechanacimiento  => @fechanacimiento,
+                    direccion        => @direccion,
+                    fechaingreso     => @fechaingreso
+                );";
 
-                        command.Parameters.AddWithValue("@docusuario", request.docusuario);
-                        command.Parameters.AddWithValue("@nombres", request.nombres);
-                        command.Parameters.AddWithValue("@apellidopaterno", request.apellidopaterno);
-                        command.Parameters.AddWithValue("@apellidomaterno", request.apellidomaterno);
-                        command.Parameters.AddWithValue("@correopersonal", (object?)request.correopersonal ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@correocorp", (object?)request.correocorp ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@celular", (object?)request.celular ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@sexo", (object?)request.sexo ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@fechanacimiento", (object?)request.fechanacimiento ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@direccion", (object?)request.direccion ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@usuario", request.usuario);
-                        command.Parameters.AddWithValue("@clave", request.clave);
-                        command.Parameters.AddWithValue("@idemppaisnegcue", request.idemppaisnegcue);
-                        command.Parameters.AddWithValue("@estado", request.estado);
-                        command.Parameters.AddWithValue("@fechaingreso", (object?)request.fechaingreso ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@usuariocreacion", request.usuariocreacion);
+                    using (var command = new NpgsqlCommand(sql, connection))
+                    {
+                        // Requeridos (según la función en Postgres)
+                        command.Parameters.Add("docusuario", NpgsqlDbType.Varchar).Value = request.docusuario ?? (object)DBNull.Value;
+                        command.Parameters.Add("nombres", NpgsqlDbType.Varchar).Value = request.nombres ?? (object)DBNull.Value;
+                        command.Parameters.Add("apellidopaterno", NpgsqlDbType.Varchar).Value = request.apellidopaterno ?? (object)DBNull.Value;
+                        command.Parameters.Add("apellidomaterno", NpgsqlDbType.Varchar).Value = request.apellidomaterno ?? (object)DBNull.Value;
+                        command.Parameters.Add("usuario", NpgsqlDbType.Varchar).Value = request.usuario ?? (object)DBNull.Value;
+                        command.Parameters.Add("clave", NpgsqlDbType.Varchar).Value = request.clave ?? (object)DBNull.Value;
+                        command.Parameters.Add("idemppaisnegcue", NpgsqlDbType.Integer).Value = request.idemppaisnegcue;
+                        command.Parameters.Add("estado", NpgsqlDbType.Integer).Value = request.estado;
+                        command.Parameters.Add("usuariocreacion", NpgsqlDbType.Varchar).Value = request.usuariocreacion ?? (object)DBNull.Value;
+
+                        // Opcionales (NULL cuando no vienen)
+                        command.Parameters.Add("correopersonal", NpgsqlDbType.Varchar).Value = (object?)request.correopersonal ?? DBNull.Value;
+                        command.Parameters.Add("correocorp", NpgsqlDbType.Varchar).Value = (object?)request.correocorp ?? DBNull.Value;
+                        command.Parameters.Add("celular", NpgsqlDbType.Varchar).Value = (object?)request.celular ?? DBNull.Value;
+                        command.Parameters.Add("sexo", NpgsqlDbType.Char).Value = (object?)request.sexo ?? DBNull.Value;
+                        command.Parameters.Add("fechanacimiento", NpgsqlDbType.Date).Value = (object?)request.fechanacimiento ?? DBNull.Value;
+                        command.Parameters.Add("direccion", NpgsqlDbType.Varchar).Value = (object?)request.direccion ?? DBNull.Value;
+                        command.Parameters.Add("fechaingreso", NpgsqlDbType.Date).Value = (object?)request.fechaingreso ?? DBNull.Value;
 
                         using (var reader = await command.ExecuteReaderAsync())
                         {
@@ -371,6 +454,12 @@ namespace RombiBack.Repository.ROM.SEGURIDAD.MGM_Permisos
                             {
                                 respuesta.Estado = reader["Estado"]?.ToString();
                                 respuesta.Mensaje = reader["Mensaje"]?.ToString();
+                            }
+                            else
+                            {
+                                // Por si la función no retornara filas (no debería pasar)
+                                respuesta.Estado = "ERROR";
+                                respuesta.Mensaje = "No se recibió respuesta del servidor.";
                             }
                         }
                     }
@@ -389,17 +478,40 @@ namespace RombiBack.Repository.ROM.SEGURIDAD.MGM_Permisos
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(_dbConnection.GetConnectionROMBI()))
+                using (var connection = new NpgsqlConnection(_dbConnection.GetConnectionROMBI()))
                 {
                     await connection.OpenAsync();
 
-                    using (SqlCommand command = new SqlCommand("USP_GETUSUARIOXDOC", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@docusuario", docusuario);
-                        command.Parameters.AddWithValue("@nombresocio", nombresocio);
+                    // Alias para mantener los mismos nombres de columnas que espera tu C#
+                    const string sql = @"
+                SELECT
+                    idusuario,
+                    docusuario_out AS docusuario,
+                    nombres,
+                    apellidopaterno,
+                    apellidomaterno,
+                    correopersonal,
+                    correocorp,
+                    celular,
+                    sexo,
+                    fechanacimiento,
+                    direccion,
+                    usuario_out AS usuario,
+                    clave,
+                    idemppaisnegcue,
+                    estado,
+                    fechaingreso
+                FROM intranet.usp_getusuarioxdoc(
+                    docusuario  => @docusuario,
+                    nombresocio => @nombresocio
+                );";
 
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    using (var command = new NpgsqlCommand(sql, connection))
+                    {
+                        command.Parameters.Add("docusuario", NpgsqlDbType.Varchar).Value = docusuario ?? (object)DBNull.Value;
+                        command.Parameters.Add("nombresocio", NpgsqlDbType.Varchar).Value = nombresocio ?? (object)DBNull.Value;
+
+                        using (var reader = await command.ExecuteReaderAsync())
                         {
                             if (await reader.ReadAsync())
                             {
@@ -414,17 +526,17 @@ namespace RombiBack.Repository.ROM.SEGURIDAD.MGM_Permisos
                                     correocorp = reader["correocorp"]?.ToString(),
                                     celular = reader["celular"]?.ToString(),
                                     sexo = reader["sexo"]?.ToString(),
-                                    fechanacimiento = reader["fechanacimiento"] != DBNull.Value
-                                        ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("fechanacimiento"))
-                                        : null,
+                                    fechanacimiento = reader.IsDBNull(reader.GetOrdinal("fechanacimiento"))
+                                        ? (DateTime?)null
+                                        : reader.GetDateTime(reader.GetOrdinal("fechanacimiento")),
                                     direccion = reader["direccion"]?.ToString(),
                                     usuario = reader["usuario"]?.ToString(),
-                                    clave = reader["clave"]?.ToString(),
-                                    idemppaisnegcue = Convert.ToInt32(reader["idemppaisnegcue"]),
-                                    estado = Convert.ToInt32(reader["estado"]),
-                                    fechaingreso = reader["fechaingreso"] != DBNull.Value
-                                        ? (DateTime?)reader.GetDateTime(reader.GetOrdinal("fechaingreso"))
-                                        : null
+                                    clave = reader["clave"]?.ToString(),  // ya viene desencriptada desde la función
+                                    idemppaisnegcue = reader.GetInt32(reader.GetOrdinal("idemppaisnegcue")),
+                                    estado = reader.GetInt32(reader.GetOrdinal("estado")),
+                                    fechaingreso = reader.IsDBNull(reader.GetOrdinal("fechaingreso"))
+                                        ? (DateTime?)null
+                                        : reader.GetDateTime(reader.GetOrdinal("fechaingreso"))
                                 };
                             }
                         }
