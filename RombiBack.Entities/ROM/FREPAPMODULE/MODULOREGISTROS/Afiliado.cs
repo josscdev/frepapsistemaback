@@ -41,4 +41,19 @@ namespace RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS
         public DateTime? fechaanulacion { get; set; }
     }
 
+    public class ListarOpcionUbigeo
+    {
+        public string codubicacion { get; set; } = string.Empty;
+        public string rr { get; set; } = string.Empty;
+        public string pp { get; set; } = string.Empty;
+        public string dd { get; set; } = string.Empty;
+        public string? region { get; set; }
+        public string? subregion { get; set; }
+        public string? localidad { get; set; }
+    }
+    public class FiltroUbigeo
+    {
+        public int? idemppaisnegcue { get; set; }
+        public int? pais { get; set; }
+    }
 }

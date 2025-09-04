@@ -58,8 +58,8 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
                         estado_text = GetString(rd, "estado_text"),
                         codubicacion = GetString(rd, "codubicacion"),
                         region = GetString(rd, "region"),
-                        provincia = GetString(rd, "provincia"),
-                        distrito = GetString(rd, "distrito"),
+                        provincia = GetString(rd, "subregion"),
+                        distrito = GetString(rd, "localidad"),
                         usuariocreacion = GetString(rd, "usuariocreacion"),
                         fechacreacion = GetDateTime(rd, "fechacreacion"),
                         usuariomodificacion = GetString(rd, "usuariomodificacion"),
@@ -106,5 +106,41 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
 
         private static string? ToDbNullIfEmpty(string? s)
             => string.IsNullOrWhiteSpace(s) ? null : s;
+
+        public async Task<IEnumerable<ListarOpcionUbigeo>> ListarUbigeos(int? idemppaisnegcue, int? pais)
+        {
+            var list = new List<ListarOpcionUbigeo>();
+            const string sql = "SELECT * FROM intranet.ubigeo_listar(@idemppaisnegcue,@pais);";
+
+            try
+            {
+                await using var cn = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+                await cn.OpenAsync();
+                await using var cmd = new NpgsqlCommand(sql, cn);
+                cmd.Parameters.AddWithValue("@idemppaisnegcue", (object?)idemppaisnegcue ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@pais", (object?)pais ?? DBNull.Value);
+
+                await using var rd = await cmd.ExecuteReaderAsync();
+                while (await rd.ReadAsync())
+                {
+                    list.Add(new ListarOpcionUbigeo
+                    {
+                        codubicacion = rd["codubicacion"].ToString()!,
+                        rr = rd["rr"].ToString()!,
+                        pp = rd["pp"].ToString()!,
+                        dd = rd["dd"].ToString()!,
+                        region = rd["region"] as string,
+                        subregion = rd["subregion"] as string,
+                        localidad = rd["localidad"] as string
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error al listar ubigeo", ex);
+            }
+
+            return list;
+        }
     }
 }

@@ -21,5 +21,9 @@ namespace RombiBack.Controllers.ROM.FREPAPMODULE.GESTIONAFILIACIONES.MODULOREGIS
             var result = await _afiliacionesServices.ListarAfiliaciones(filtro);
             return Ok(result);
         }
+
+        [HttpPost("GetListarUbigeos")]
+        public async Task<ActionResult<IEnumerable<ListarOpcionUbigeo>>> Listar([FromBody] FiltroUbigeo f)
+        => Ok(await _afiliacionesServices.ListarUbigeos(f.idemppaisnegcue, f.pais));
     }
 }

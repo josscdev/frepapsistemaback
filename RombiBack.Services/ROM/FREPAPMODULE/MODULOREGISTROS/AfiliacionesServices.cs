@@ -22,5 +22,8 @@ namespace RombiBack.Services.ROM.FREPAPMODULE.MODULOREGISTROS
             // Aquí podrías aplicar reglas adicionales (normalizar perfil/usuario, etc.)
             return _afiliacionesRepository.ListarAfiliaciones(filtro);
         }
+
+        public Task<IEnumerable<ListarOpcionUbigeo>> ListarUbigeos(int? idemppaisnegcue, int? pais)
+        => _afiliacionesRepository.ListarUbigeos(idemppaisnegcue, pais);
     }
 }

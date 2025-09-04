@@ -10,5 +10,6 @@ namespace RombiBack.Services.ROM.FREPAPMODULE.MODULOREGISTROS
     public interface IAfiliacionesServices
     {
         Task<IEnumerable<ListarAfiliacion>> ListarAfiliaciones(FiltroAfiliacion filtro);
+        Task<IEnumerable<ListarOpcionUbigeo>> ListarUbigeos(int? idemppaisnegcue, int? pais);
     }
 }
