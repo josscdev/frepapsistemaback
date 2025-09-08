@@ -55,7 +55,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+//builder.Services.AddSwaggerGen();
 // En ConfigureServices en Startup.cs
 
 builder.Services.AddTransient<DataAcces>();
@@ -139,6 +139,21 @@ builder.Services.AddSwaggerGen(c =>
             new string[]{}
         }
     });
+    //// Evita choques por clases con el mismo nombre en distintos namespaces
+    //c.CustomSchemaIds(t => t.FullName);
+
+    //// Si hay endpoints duplicados (mismo path+método), no rompas: elige uno
+    //c.ResolveConflictingActions(desc => desc.First());
+
+    //// (opcional) explicit IFormFile => binary
+    //c.MapType<IFormFile>(() => new Microsoft.OpenApi.Models.OpenApiSchema
+    //{
+    //    Type = "string",
+    //    Format = "binary"
+    //});
+    //// Si usabas XML docs antes, protégelos:
+    // var xml = Path.Combine(AppContext.BaseDirectory, "Api.xml");
+    // if (System.IO.File.Exists(xml)) c.IncludeXmlComments(xml);
 
 });
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options => {

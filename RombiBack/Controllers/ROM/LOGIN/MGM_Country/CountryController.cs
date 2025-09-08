@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS;
 using RombiBack.Services.ROM.LOGIN.Company;
 using RombiBack.Services.ROM.LOGIN.MGM_Country;
 using System.Text.Json;
@@ -27,5 +28,8 @@ namespace RombiBack.Controllers.ROM.LOGIN.MGM_Country
             //return Ok(countries);
             return Content(jsonString, "application/json");
         }
+
+
+       
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS
 {
@@ -26,8 +27,8 @@ namespace RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS
         public string? apellidopaterno { get; set; }
         public string? apellidomaterno { get; set; }
         public DateTime? fechaafiliacion { get; set; }
-        public int edadafiliado { get; set; }
-        public int estado { get; set; }
+        public int? edadafiliado { get; set; }
+        public int? estado { get; set; }
         public string? estado_text { get; set; }
         public string? codubicacion { get; set; }
         public string? region { get; set; }
@@ -56,4 +57,67 @@ namespace RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS
         public int? idemppaisnegcue { get; set; }
         public int? pais { get; set; }
     }
+
+    public sealed class AfiliacionCreateDto
+    {
+        public string? numficha { get; set; }
+        public string? fechaafiliacion { get; set; }   // "YYYY-MM-DD"
+        public string? nombres { get; set; } = default!;
+        public string? apellidopaterno { get; set; } = default!;
+        public string? apellidomaterno { get; set; }
+
+        public string? idtipodocumento { get; set; } = default!;
+        public string? docafiliado { get; set; }
+
+        public string? fechanacimiento { get; set; }   // "YYYY-MM-DD"
+        public int? edadafiliado { get; set; }
+
+        public string? rr { get; set; }   // "RR"
+        public string? pp { get; set; }   // "RRPP"
+        public string? dd { get; set; }   // "RRPPDD"
+        public string? ubigeo { get; set; }
+
+        public string? avenida { get; set; }
+        public string? numero { get; set; }
+        public string? urbanizacion { get; set; }
+
+        public string? telefono { get; set; }
+        public string? correo { get; set; } = default!;
+        public string? estado_text { get; set; } = "ACTIVO";
+        public int? estado { get; set; }
+        public string? observacion { get; set; }
+    }
+
+    public class RegistrarAfiliacionForm
+    {
+        // === Campos del DTO ===
+        public string? numficha { get; set; }
+        public string? fechaafiliacion { get; set; }
+        public string? nombres { get; set; } = default!;
+        public string? apellidopaterno { get; set; } = default!;
+        public string? apellidomaterno { get; set; }
+        public string? idtipodocumento { get; set; } = default!;
+        public string? docafiliado { get; set; }
+        public string? fechanacimiento { get; set; }
+        public int? edadafiliado { get; set; }
+        public string? rr { get; set; }
+        public string? pp { get; set; }
+        public string? dd { get; set; }
+        public string? ubigeo { get; set; }
+        public string? avenida { get; set; }
+        public string? numero { get; set; }
+        public string? urbanizacion { get; set; }
+        public string? telefono { get; set; }
+        public string? correo { get; set; } = default!;
+        public string? estado_text { get; set; } = "ACTIVO";
+        public int? estado { get; set; }
+        public string? observacion { get; set; }
+
+        // === Archivos ===
+        public IFormFile? foto { get; set; }
+        public IFormFile? fichaafiliacionfile { get; set; }
+        public IFormFile? hojadevida { get; set; }
+        public IFormFile? copiadocumento { get; set; }
+    }
+
 }
