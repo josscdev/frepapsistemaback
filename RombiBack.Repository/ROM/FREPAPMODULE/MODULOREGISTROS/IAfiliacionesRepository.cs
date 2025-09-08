@@ -11,6 +11,16 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
     {
         Task<IEnumerable<ListarAfiliacion>> ListarAfiliaciones(FiltroAfiliacion filtro);
         Task<IEnumerable<ListarOpcionUbigeo>> ListarUbigeos(int? idemppaisnegcue, int? pais);
+        // ➕ Registrar afiliación (devuelve el ID generado)
+        Task<long> InsertAfiliacionAsync(AfiliacionCreateDto dto, string usuario);
+        Task UpdateArchivosAsync(
+            long idafiliacion,
+            string? fotoimg,
+            string? fichaafiliacionpdf,
+            string? hojadevidapdf
+        // string? copiadocumentopdf // si creas esta columna, descomenta
+        );
+
 
     }
 }

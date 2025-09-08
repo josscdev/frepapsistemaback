@@ -34,46 +34,54 @@ namespace RombiBack.Services.ROM.FREPAPMODULE.MODULOREGISTROS
         private static readonly string[] ImageTypes = { "image/png", "image/jpeg", "image/jpg", "image/webp" };
         private static readonly string[] PdfTypes = { "application/pdf" };
         // —— nuevo registrar ——
+
         public async Task<RegistrarAfiliacionResult> RegistrarAfiliacion(
             AfiliacionCreateDto model,
             IFormFile? foto,
             IFormFile? fichaafiliacionfile,
             IFormFile? hojadevida,
-            IFormFile? copiadocumento)
+            IFormFile? copiadocumento // si luego creas columna en BD, la agregamos al update
+        )
         {
-            var tempId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var saved = new Dictionary<string, string?>();
+            var usuario = "system"; // o el usuario real del contexto
+
+            // 1) Insertar afiliación y obtener ID
+            var idafiliacion = await _afiliacionesRepository.InsertAfiliacionAsync(model, usuario);
+
+            // 2) Guardar archivos físicamente y capturar rutas
+            string? pathFoto = null;
+            string? pathFicha = null;
+            string? pathHv = null;
 
             if (foto != null)
-                saved["foto"] = await SaveToFolder(
-                    foto, Path.Combine(Root, "Foto"), $"FOTO_{tempId}", ImageTypes, MaxImageKB * 1024);
+                pathFoto = await SaveToFolder(foto, Path.Combine(Root, "Foto"), $"FOTO_{idafiliacion}", ImageTypes, MaxImageKB * 1024);
 
             if (fichaafiliacionfile != null)
-                saved["fichaafiliacionfile"] = await SaveToFolder(
-                    fichaafiliacionfile, Path.Combine(Root, "FichaAfiliado"), $"FICHA_{tempId}", PdfTypes, MaxPdfMB * 1024 * 1024);
+                pathFicha = await SaveToFolder(fichaafiliacionfile, Path.Combine(Root, "FichaAfiliado"), $"FICHA_{idafiliacion}", PdfTypes, MaxPdfMB * 1024 * 1024);
 
             if (hojadevida != null)
-                saved["hojadevida"] = await SaveToFolder(
-                    hojadevida, Path.Combine(Root, "HojaVida"), $"HV_{tempId}", PdfTypes, MaxPdfMB * 1024 * 1024);
+                pathHv = await SaveToFolder(hojadevida, Path.Combine(Root, "HojaVida"), $"HV_{idafiliacion}", PdfTypes, MaxPdfMB * 1024 * 1024);
 
-            if (copiadocumento != null)
-                saved["copiadocumento"] = await SaveToFolder(
-                    copiadocumento, Path.Combine(Root, "CopiaDocumento"), $"COPIA_{tempId}", PdfTypes, MaxPdfMB * 1024 * 1024);
+            // 3) Actualizar columnas de archivos en la misma fila
+            await _afiliacionesRepository.UpdateArchivosAsync(idafiliacion, pathFoto, pathFicha, pathHv);
 
-            // log opcional
-            Console.WriteLine("[AFILIACION] " + JsonSerializer.Serialize(new { model, saved },
-                new JsonSerializerOptions { WriteIndented = true }));
+            // 4) Respuesta
+            var saved = new Dictionary<string, string?>
+            {
+                ["fotoimg"] = pathFoto,
+                ["fichaafiliacionpdf"] = pathFicha,
+                ["hojadevidapdf"] = pathHv
+            };
+
+            Console.WriteLine("[AFILIACION] " +
+                System.Text.Json.JsonSerializer.Serialize(new { idafiliacion, model, saved },
+                new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
 
             return new RegistrarAfiliacionResult { Ok = true, Files = saved };
         }
 
-        // ====== helpers privados ======
-        private static async Task<string?> SaveToFolder(
-            IFormFile file,
-            string folder,
-            string prefix,
-            string[] allowedTypes,
-            long maxBytes)
+        // Helper para guardar archivos
+        private static async Task<string?> SaveToFolder(IFormFile file, string folder, string prefix, string[] allowedTypes, long maxBytes)
         {
             if (file.Length == 0) return null;
             if (!allowedTypes.Contains(file.ContentType))
@@ -82,10 +90,10 @@ namespace RombiBack.Services.ROM.FREPAPMODULE.MODULOREGISTROS
                 throw new InvalidOperationException($"Archivo supera el límite de {maxBytes} bytes.");
 
             Directory.CreateDirectory(folder);
-
             var ext = Path.GetExtension(file.FileName);
             var name = $"{prefix}_{DateTime.Now:yyyyMMddHHmmssfff}{ext}".ToLowerInvariant();
-            var path = Path.Combine(folder, Sanitize(name));
+            var safe = Sanitize(name);
+            var path = Path.Combine(folder, safe);
 
             using (var fs = System.IO.File.Create(path))
                 await file.CopyToAsync(fs);

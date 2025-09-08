@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Npgsql;
+using NpgsqlTypes;
 using RombiBack.Abstraction;
 using RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS;
 
@@ -141,6 +142,108 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
             }
 
             return list;
+        }
+
+
+        public async Task<long> InsertAfiliacionAsync(AfiliacionCreateDto dto, string usuario)
+        {
+            const string sql = @"
+                INSERT INTO intranet.afiliacion
+                (
+                    numficha, docafiliado, nombres, apellidopaterno, apellidomaterno,
+                    fechanacimiento, edadafiliado,
+                    codubicacion, avenida, numero, urbanizacion,
+                    celular, correo, observacionficha,
+                    fechaafiliacion, estado,
+                    usuariocreacion, fechacreacion
+                )
+                VALUES
+                (
+                    @numficha, @docafiliado, @nombres, @apellidopaterno, @apellidomaterno,
+                    @fechanacimiento, @edadafiliado,
+                    @codubicacion, @avenida, @numero, @urbanizacion,
+                    @celular, @correo, @observacionficha,
+                    @fechaafiliacion, @estado,
+                    @usuariocreacion, NOW()
+                )
+                RETURNING idafiliacion;";
+
+            await using var cn = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+            await cn.OpenAsync();
+
+            await using var cmd = new NpgsqlCommand(sql, cn);
+
+            // helpers de parseo y nulos
+            static object DbNull(string? s) => string.IsNullOrWhiteSpace(s) ? DBNull.Value : s!;
+            static object DbNullInt(int? i) => i.HasValue ? i.Value : DBNull.Value;
+            static object DbNullDate(string? ymd)
+            {
+                if (string.IsNullOrWhiteSpace(ymd)) return DBNull.Value;
+                // acepta "YYYY-MM-DD"
+                if (DateTime.TryParse(ymd, out var dt))
+                    return dt.Date;
+                return DBNull.Value;
+            }
+
+            var codubicacion = dto.dd ?? dto.pp ?? dto.rr; // usa el más específico disponible
+
+            cmd.Parameters.Add(new NpgsqlParameter("@numficha", NpgsqlDbType.Varchar) { Value = DbNull(dto.numficha) });
+            cmd.Parameters.Add(new NpgsqlParameter("@docafiliado", NpgsqlDbType.Varchar) { Value = DbNull(dto.docafiliado) });
+            cmd.Parameters.Add(new NpgsqlParameter("@nombres", NpgsqlDbType.Varchar) { Value = dto.nombres });
+            cmd.Parameters.Add(new NpgsqlParameter("@apellidopaterno", NpgsqlDbType.Varchar) { Value = dto.apellidopaterno });
+            cmd.Parameters.Add(new NpgsqlParameter("@apellidomaterno", NpgsqlDbType.Varchar) { Value = DbNull(dto.apellidomaterno) });
+
+            cmd.Parameters.Add(new NpgsqlParameter("@fechanacimiento", NpgsqlDbType.Date) { Value = DbNullDate(dto.fechanacimiento) });
+            cmd.Parameters.Add(new NpgsqlParameter("@edadafiliado", NpgsqlDbType.Integer) { Value = dto.edadafiliado });
+
+            cmd.Parameters.Add(new NpgsqlParameter("@codubicacion", NpgsqlDbType.Varchar) { Value = DbNull(codubicacion) });
+            cmd.Parameters.Add(new NpgsqlParameter("@avenida", NpgsqlDbType.Varchar) { Value = DbNull(dto.avenida) });
+            cmd.Parameters.Add(new NpgsqlParameter("@numero", NpgsqlDbType.Varchar) { Value = DbNull(dto.numero) });
+            cmd.Parameters.Add(new NpgsqlParameter("@urbanizacion", NpgsqlDbType.Varchar) { Value = DbNull(dto.urbanizacion) });
+
+            cmd.Parameters.Add(new NpgsqlParameter("@celular", NpgsqlDbType.Varchar) { Value = DbNull(dto.telefono) });
+            cmd.Parameters.Add(new NpgsqlParameter("@correo", NpgsqlDbType.Varchar) { Value = dto.correo });
+            cmd.Parameters.Add(new NpgsqlParameter("@observacionficha", NpgsqlDbType.Varchar) { Value = DbNull(dto.observacion) });
+
+            cmd.Parameters.Add(new NpgsqlParameter("@fechaafiliacion", NpgsqlDbType.Date) { Value = DbNullDate(dto.fechaafiliacion) });
+            cmd.Parameters.Add(new NpgsqlParameter("@estado", NpgsqlDbType.Integer) { Value = dto.estado });
+
+            cmd.Parameters.Add(new NpgsqlParameter("@usuariocreacion", NpgsqlDbType.Varchar) { Value = usuario });
+
+            var id = await cmd.ExecuteScalarAsync();
+            return (id is long l) ? l : Convert.ToInt64(id);
+        }
+
+        // =============== UPDATE ARCHIVOS ===================
+        public async Task UpdateArchivosAsync(
+            long idafiliacion,
+            string? fotoimg,
+            string? fichaafiliacionpdf,
+            string? hojadevidapdf
+        // string? copiadocumentopdf
+        )
+        {
+            // Si no existe alguna columna, quítala del SQL y de los parámetros
+           const string sql = @"
+            UPDATE intranet.afiliacion
+            SET
+                fotoimg = COALESCE(@fotoimg, fotoimg),
+                fichaafiliacionpdf = COALESCE(@fichaafiliacionpdf, fichaafiliacionpdf),
+                hojadevidapdf = COALESCE(@hojadevidapdf, hojadevidapdf)
+                -- , copiadocumentopdf = COALESCE(@copiadocumentopdf, copiadocumentopdf)
+            WHERE idafiliacion = @id;";
+
+            await using var cn = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+            await cn.OpenAsync();
+
+            await using var cmd = new NpgsqlCommand(sql, cn);
+            cmd.Parameters.Add(new NpgsqlParameter("@id", NpgsqlDbType.Integer) { Value = (int)idafiliacion }); // serial4 en tu tabla
+            cmd.Parameters.Add(new NpgsqlParameter("@fotoimg", NpgsqlDbType.Varchar) { Value = (object?)fotoimg ?? DBNull.Value });
+            cmd.Parameters.Add(new NpgsqlParameter("@fichaafiliacionpdf", NpgsqlDbType.Varchar) { Value = (object?)fichaafiliacionpdf ?? DBNull.Value });
+            cmd.Parameters.Add(new NpgsqlParameter("@hojadevidapdf", NpgsqlDbType.Varchar) { Value = (object?)hojadevidapdf ?? DBNull.Value });
+            // cmd.Parameters.Add(new NpgsqlParameter("@copiadocumentopdf", NpgsqlDbType.Varchar) { Value = (object?)copiadocumentopdf ?? DBNull.Value });
+
+            await cmd.ExecuteNonQueryAsync();
         }
     }
 }
