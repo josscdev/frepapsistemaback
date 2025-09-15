@@ -21,19 +21,33 @@ namespace RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS
     public class ListarAfiliacion
     {
         public int idafiliacion { get; set; }
+        public string? fotoimg { get; set; }
         public string? numficha { get; set; }
+        public int? idtipodocumento { get; set; }
+        public string? nombretipodocumento { get; set; }
+        public string? abreviatura { get; set; }
         public string? docafiliado { get; set; }
         public string? nombres { get; set; }
         public string? apellidopaterno { get; set; }
         public string? apellidomaterno { get; set; }
         public DateTime? fechaafiliacion { get; set; }
+        public DateTime? fechanacimiento { get; set; }
+        public string? lugarnacimiento { get; set; }
+        public string? sexo { get; set; }
         public int? edadafiliado { get; set; }
+        public int? idestadocivil { get; set; }
+        public string? nombreestadocivil { get; set; }
         public int? estado { get; set; }
         public string? estado_text { get; set; }
         public string? codubicacion { get; set; }
         public string? region { get; set; }
-        public string? provincia { get; set; }
-        public string? distrito { get; set; }
+        public string? subregion { get; set; }
+        public string? localidad { get; set; }
+        public string? avenida { get; set; }
+        public string? numero { get; set; }
+        public string? urbanizacion { get; set; }
+        public string? celular { get; set; }
+        public string? correo { get; set; }
         public string? usuariocreacion { get; set; }
         public DateTime? fechacreacion { get; set; }
         public string? usuariomodificacion { get; set; }
@@ -66,11 +80,14 @@ namespace RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS
         public string? apellidopaterno { get; set; } = default!;
         public string? apellidomaterno { get; set; }
 
-        public string? idtipodocumento { get; set; } = default!;
+        public int? idtipodocumento { get; set; }
         public string? docafiliado { get; set; }
 
         public string? fechanacimiento { get; set; }   // "YYYY-MM-DD"
         public int? edadafiliado { get; set; }
+        public string? sexo { get; set; }
+        public int? idestadocivil { get; set; }
+        public string? lugarnacimiento { get; set; }
 
         public string? rr { get; set; }   // "RR"
         public string? pp { get; set; }   // "RRPP"
@@ -96,10 +113,13 @@ namespace RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS
         public string? nombres { get; set; } = default!;
         public string? apellidopaterno { get; set; } = default!;
         public string? apellidomaterno { get; set; }
-        public string? idtipodocumento { get; set; } = default!;
+        public int? idtipodocumento { get; set; } = default!;
         public string? docafiliado { get; set; }
         public string? fechanacimiento { get; set; }
         public int? edadafiliado { get; set; }
+        public string? sexo { get; set; }
+        public int? idestadocivil { get; set; }
+        public string? lugarnacimiento { get; set; }
         public string? rr { get; set; }
         public string? pp { get; set; }
         public string? dd { get; set; }
@@ -120,4 +140,32 @@ namespace RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS
         public IFormFile? copiadocumento { get; set; }
     }
 
+    public class ListarEstadoCivil
+    {
+        public int idestadocivil { get; set; }
+        public string? nombreestadocivil { get; set; }
+        public int idemppaisnegcue { get; set; }
+        public int estado { get; set; }
+    }
+
+    public class ListarTipoDocumento
+    {
+        public int idtipodocumento { get; set; }
+        public string? nombretipodocumento { get; set; }
+        public string? abreviatura { get; set; }
+        public int idemppaisnegcue { get; set; }
+        public int estado { get; set; }
+    }
+
+    public class FiltroAfiliacionDesactivar
+    {
+        public int idafiliacion { get; set; }
+        public string usuarioanulacion { get; set; } = string.Empty;
+    }
+
+    public class RespuestaAfiliacionDesactivar
+    {
+        public bool success { get; set; }
+        public string? message { get; set; }
+    }
 }

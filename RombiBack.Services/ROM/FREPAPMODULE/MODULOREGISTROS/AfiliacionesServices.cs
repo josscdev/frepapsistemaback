@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using RombiBack.Abstraction;
 using RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS;
 using RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS;
 
@@ -106,6 +107,21 @@ namespace RombiBack.Services.ROM.FREPAPMODULE.MODULOREGISTROS
             foreach (var ch in Path.GetInvalidFileNameChars())
                 fileName = fileName.Replace(ch, '_');
             return fileName;
+        }
+
+        public async Task<IEnumerable<ListarEstadoCivil>> ListarEstadosCiviles(int idemppaisnegcue)
+        {
+            return await _afiliacionesRepository.ListarEstadosCiviles(idemppaisnegcue);
+        }
+
+        public async Task<IEnumerable<ListarTipoDocumento>> ListarTiposDocumento(int idemppaisnegcue)
+        {
+            return await _afiliacionesRepository.ListarTiposDocumento(idemppaisnegcue);
+        }
+
+        public async Task<RespuestaAfiliacionDesactivar> PostDesactivarAfiliacion(FiltroAfiliacionDesactivar request)
+        {
+            return await _afiliacionesRepository.PostDesactivarAfiliacion(request);
         }
     }
 }

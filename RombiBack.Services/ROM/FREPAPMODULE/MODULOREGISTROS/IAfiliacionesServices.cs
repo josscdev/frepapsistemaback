@@ -18,7 +18,10 @@ namespace RombiBack.Services.ROM.FREPAPMODULE.MODULOREGISTROS
           IFormFile? fichaafiliacionfile,
           IFormFile? hojadevida,
           IFormFile? copiadocumento);
-        }
+        Task<IEnumerable<ListarEstadoCivil>> ListarEstadosCiviles(int idemppaisnegcue);
+        Task<IEnumerable<ListarTipoDocumento>> ListarTiposDocumento(int idemppaisnegcue);
+        Task<RespuestaAfiliacionDesactivar> PostDesactivarAfiliacion(FiltroAfiliacionDesactivar request);
+    }
 
     public sealed class RegistrarAfiliacionResult
     {

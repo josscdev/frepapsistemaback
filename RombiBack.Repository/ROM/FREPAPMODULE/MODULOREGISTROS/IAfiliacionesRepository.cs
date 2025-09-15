@@ -21,6 +21,8 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
         // string? copiadocumentopdf // si creas esta columna, descomenta
         );
 
-
+        Task<IEnumerable<ListarEstadoCivil>> ListarEstadosCiviles(int idemppaisnegcue);
+        Task<IEnumerable<ListarTipoDocumento>> ListarTiposDocumento(int idemppaisnegcue);
+        Task<RespuestaAfiliacionDesactivar> PostDesactivarAfiliacion(FiltroAfiliacionDesactivar request);
     }
 }

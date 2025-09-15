@@ -53,6 +53,9 @@ namespace RombiBack.Controllers.ROM.FREPAPMODULE.GESTIONAFILIACIONES.MODULOREGIS
                     docafiliado = form.docafiliado,
                     fechanacimiento = form.fechanacimiento,
                     edadafiliado = form.edadafiliado,
+                    sexo = form.sexo,
+                    idestadocivil = form.idestadocivil,
+                    lugarnacimiento = form.lugarnacimiento,
                     rr = form.rr,
                     pp = form.pp,
                     dd = form.dd,
@@ -69,6 +72,50 @@ namespace RombiBack.Controllers.ROM.FREPAPMODULE.GESTIONAFILIACIONES.MODULOREGIS
                 form.foto, form.fichaafiliacionfile, form.hojadevida, form.copiadocumento);
 
             return Ok(res);
+        }
+
+        [HttpGet("GetListarEstadosCiviles")]
+        public async Task<IActionResult> GetListarEstadosCiviles([FromQuery] int idemppaisnegcue)
+        {
+            try
+            {
+                var result = await _afiliacionesServices.ListarEstadosCiviles(idemppaisnegcue);
+                return Ok(result);
+            }
+            catch (ApplicationException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = ex.Message, detail = ex.InnerException?.Message });
+            }
+        }
+
+        [HttpGet("GetListarTiposDocumento")]
+        public async Task<IActionResult> GetListarTiposDocumento([FromQuery] int idemppaisnegcue)
+        {
+            try
+            {
+                var result = await _afiliacionesServices.ListarTiposDocumento(idemppaisnegcue);
+                return Ok(result);
+            }
+            catch (ApplicationException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = ex.Message, detail = ex.InnerException?.Message });
+            }
+        }
+
+        [HttpPost("PostDesactivarAfiliacion")]
+        public async Task<IActionResult> PostDesactivarAfiliacion([FromBody] FiltroAfiliacionDesactivar request)
+        {
+            if (request == null)
+                return BadRequest(new { success = false, message = "Datos inválidos" });
+
+            var result = await _afiliacionesServices.PostDesactivarAfiliacion(request);
+
+            if (!result.success)
+                return BadRequest(result); // 👈 devuelve 400 si hubo error
+
+            return Ok(result);
         }
 
     }

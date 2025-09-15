@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 using Npgsql;
 using NpgsqlTypes;
 using RombiBack.Abstraction;
@@ -45,22 +48,37 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
                 await using var rd = await cmd.ExecuteReaderAsync();
                 while (await rd.ReadAsync())
                 {
+                    var rutaFoto = GetString(rd, "fotoimg");
                     var item = new ListarAfiliacion
                     {
                         idafiliacion = GetInt(rd, "idafiliacion"),
+                        fotoimg = ConvertFileToBase64(rutaFoto), // 👈 ahora devuelve Base64 o null
                         numficha = GetString(rd, "numficha"),
+                        idtipodocumento = GetInt(rd, "idtipodocumento"),
+                        nombretipodocumento = GetString(rd, "nombretipodocumento"),
+                        abreviatura = GetString(rd, "abreviatura"),
                         docafiliado = GetString(rd, "docafiliado"),
                         nombres = GetString(rd, "nombres"),
                         apellidopaterno = GetString(rd, "apellidopaterno"),
                         apellidomaterno = GetString(rd, "apellidomaterno"),
                         fechaafiliacion = GetDateTime(rd, "fechaafiliacion"),
+                        fechanacimiento = GetDateTime(rd, "fechanacimiento"),
+                        lugarnacimiento = GetString(rd, "lugarnacimiento"),
+                        sexo = GetString(rd, "sexo"),
                         edadafiliado = GetInt(rd, "edadafiliado"),
+                        idestadocivil = GetInt(rd, "idestadocivil"),
+                        nombreestadocivil = GetString(rd, "nombreestadocivil"),
                         estado = GetInt(rd, "estado"),
                         estado_text = GetString(rd, "estado_text"),
                         codubicacion = GetString(rd, "codubicacion"),
                         region = GetString(rd, "region"),
-                        provincia = GetString(rd, "subregion"),
-                        distrito = GetString(rd, "localidad"),
+                        subregion = GetString(rd, "subregion"),
+                        localidad = GetString(rd, "localidad"),
+                        avenida = GetString(rd, "avenida"),
+                        numero = GetString(rd, "numero"),
+                        urbanizacion = GetString(rd, "urbanizacion"),
+                        celular = GetString(rd, "celular"),
+                        correo = GetString(rd, "correo"),
                         usuariocreacion = GetString(rd, "usuariocreacion"),
                         fechacreacion = GetDateTime(rd, "fechacreacion"),
                         usuariomodificacion = GetString(rd, "usuariomodificacion"),
@@ -83,6 +101,34 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
             }
 
             return resultados;
+        }
+
+        private string? ConvertFileToBase64(string? path)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path))
+                {
+                    return null; // o podrías devolver una imagen base64 por defecto
+                }
+
+                var bytes = System.IO.File.ReadAllBytes(path);
+                var ext = System.IO.Path.GetExtension(path).ToLower();
+
+                string mimeType = ext switch
+                {
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".png" => "image/png",
+                    ".webp" => "image/webp",
+                    _ => "application/octet-stream"
+                };
+
+                return $"data:{mimeType};base64,{Convert.ToBase64String(bytes)}";
+            }
+            catch
+            {
+                return null; // en caso de error, no rompas la carga
+            }
         }
 
         // Helpers de lectura segura
@@ -150,8 +196,8 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
             const string sql = @"
                 INSERT INTO intranet.afiliacion
                 (
-                    numficha, docafiliado, nombres, apellidopaterno, apellidomaterno,
-                    fechanacimiento, edadafiliado,
+                    numficha, idtipodocumento, docafiliado, nombres, apellidopaterno, apellidomaterno,
+                    fechanacimiento, edadafiliado, sexo, idestadocivil, lugarnacimiento,
                     codubicacion, avenida, numero, urbanizacion,
                     celular, correo, observacionficha,
                     fechaafiliacion, estado,
@@ -159,8 +205,8 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
                 )
                 VALUES
                 (
-                    @numficha, @docafiliado, @nombres, @apellidopaterno, @apellidomaterno,
-                    @fechanacimiento, @edadafiliado,
+                    @numficha, @idtipodocumento, @docafiliado, @nombres, @apellidopaterno, @apellidomaterno,
+                    @fechanacimiento, @edadafiliado, @sexo, @idestadocivil, @lugarnacimiento,
                     @codubicacion, @avenida, @numero, @urbanizacion,
                     @celular, @correo, @observacionficha,
                     @fechaafiliacion, @estado,
@@ -169,8 +215,6 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
                 RETURNING idafiliacion;";
 
             await using var cn = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
-            await cn.OpenAsync();
-
             await using var cmd = new NpgsqlCommand(sql, cn);
 
             // helpers de parseo y nulos
@@ -179,40 +223,58 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
             static object DbNullDate(string? ymd)
             {
                 if (string.IsNullOrWhiteSpace(ymd)) return DBNull.Value;
-                // acepta "YYYY-MM-DD"
                 if (DateTime.TryParse(ymd, out var dt))
                     return dt.Date;
                 return DBNull.Value;
             }
 
-            var codubicacion = dto.dd ?? dto.pp ?? dto.rr; // usa el más específico disponible
+            var codubicacion = dto.dd ?? dto.pp ?? dto.rr;
 
-            cmd.Parameters.Add(new NpgsqlParameter("@numficha", NpgsqlDbType.Varchar) { Value = DbNull(dto.numficha) });
-            cmd.Parameters.Add(new NpgsqlParameter("@docafiliado", NpgsqlDbType.Varchar) { Value = DbNull(dto.docafiliado) });
-            cmd.Parameters.Add(new NpgsqlParameter("@nombres", NpgsqlDbType.Varchar) { Value = dto.nombres });
-            cmd.Parameters.Add(new NpgsqlParameter("@apellidopaterno", NpgsqlDbType.Varchar) { Value = dto.apellidopaterno });
-            cmd.Parameters.Add(new NpgsqlParameter("@apellidomaterno", NpgsqlDbType.Varchar) { Value = DbNull(dto.apellidomaterno) });
+            try
+            {
+                await cn.OpenAsync();
 
-            cmd.Parameters.Add(new NpgsqlParameter("@fechanacimiento", NpgsqlDbType.Date) { Value = DbNullDate(dto.fechanacimiento) });
-            cmd.Parameters.Add(new NpgsqlParameter("@edadafiliado", NpgsqlDbType.Integer) { Value = dto.edadafiliado });
+                cmd.Parameters.Add(new NpgsqlParameter("@numficha", NpgsqlDbType.Varchar) { Value = DbNull(dto.numficha) });
+                cmd.Parameters.Add(new NpgsqlParameter("@idtipodocumento", NpgsqlDbType.Integer) { Value = dto.idtipodocumento });
+                cmd.Parameters.Add(new NpgsqlParameter("@docafiliado", NpgsqlDbType.Varchar) { Value = DbNull(dto.docafiliado) });
+                cmd.Parameters.Add(new NpgsqlParameter("@nombres", NpgsqlDbType.Varchar) { Value = dto.nombres });
+                cmd.Parameters.Add(new NpgsqlParameter("@apellidopaterno", NpgsqlDbType.Varchar) { Value = dto.apellidopaterno });
+                cmd.Parameters.Add(new NpgsqlParameter("@apellidomaterno", NpgsqlDbType.Varchar) { Value = DbNull(dto.apellidomaterno) });
 
-            cmd.Parameters.Add(new NpgsqlParameter("@codubicacion", NpgsqlDbType.Varchar) { Value = DbNull(codubicacion) });
-            cmd.Parameters.Add(new NpgsqlParameter("@avenida", NpgsqlDbType.Varchar) { Value = DbNull(dto.avenida) });
-            cmd.Parameters.Add(new NpgsqlParameter("@numero", NpgsqlDbType.Varchar) { Value = DbNull(dto.numero) });
-            cmd.Parameters.Add(new NpgsqlParameter("@urbanizacion", NpgsqlDbType.Varchar) { Value = DbNull(dto.urbanizacion) });
+                cmd.Parameters.Add(new NpgsqlParameter("@fechanacimiento", NpgsqlDbType.Date) { Value = DbNullDate(dto.fechanacimiento) });
+                cmd.Parameters.Add(new NpgsqlParameter("@edadafiliado", NpgsqlDbType.Integer) { Value = dto.edadafiliado });
+                cmd.Parameters.Add(new NpgsqlParameter("@sexo", NpgsqlDbType.Varchar) { Value = DbNull(dto.sexo) });
+                cmd.Parameters.Add(new NpgsqlParameter("@idestadocivil", NpgsqlDbType.Integer) { Value = DbNullInt(dto.idestadocivil) });
+                cmd.Parameters.Add(new NpgsqlParameter("@lugarnacimiento", NpgsqlDbType.Varchar) { Value = DbNull(dto.lugarnacimiento) });
 
-            cmd.Parameters.Add(new NpgsqlParameter("@celular", NpgsqlDbType.Varchar) { Value = DbNull(dto.telefono) });
-            cmd.Parameters.Add(new NpgsqlParameter("@correo", NpgsqlDbType.Varchar) { Value = dto.correo });
-            cmd.Parameters.Add(new NpgsqlParameter("@observacionficha", NpgsqlDbType.Varchar) { Value = DbNull(dto.observacion) });
+                cmd.Parameters.Add(new NpgsqlParameter("@codubicacion", NpgsqlDbType.Varchar) { Value = DbNull(codubicacion) });
+                cmd.Parameters.Add(new NpgsqlParameter("@avenida", NpgsqlDbType.Varchar) { Value = DbNull(dto.avenida) });
+                cmd.Parameters.Add(new NpgsqlParameter("@numero", NpgsqlDbType.Varchar) { Value = DbNull(dto.numero) });
+                cmd.Parameters.Add(new NpgsqlParameter("@urbanizacion", NpgsqlDbType.Varchar) { Value = DbNull(dto.urbanizacion) });
 
-            cmd.Parameters.Add(new NpgsqlParameter("@fechaafiliacion", NpgsqlDbType.Date) { Value = DbNullDate(dto.fechaafiliacion) });
-            cmd.Parameters.Add(new NpgsqlParameter("@estado", NpgsqlDbType.Integer) { Value = dto.estado });
+                cmd.Parameters.Add(new NpgsqlParameter("@celular", NpgsqlDbType.Varchar) { Value = DbNull(dto.telefono) });
+                cmd.Parameters.Add(new NpgsqlParameter("@correo", NpgsqlDbType.Varchar) { Value = DbNull(dto.correo) });
+                cmd.Parameters.Add(new NpgsqlParameter("@observacionficha", NpgsqlDbType.Varchar) { Value = DbNull(dto.observacion) });
 
-            cmd.Parameters.Add(new NpgsqlParameter("@usuariocreacion", NpgsqlDbType.Varchar) { Value = usuario });
+                cmd.Parameters.Add(new NpgsqlParameter("@fechaafiliacion", NpgsqlDbType.Date) { Value = DbNullDate(dto.fechaafiliacion) });
+                cmd.Parameters.Add(new NpgsqlParameter("@estado", NpgsqlDbType.Integer) { Value = dto.estado });
 
-            var id = await cmd.ExecuteScalarAsync();
-            return (id is long l) ? l : Convert.ToInt64(id);
+                cmd.Parameters.Add(new NpgsqlParameter("@usuariocreacion", NpgsqlDbType.Varchar) { Value = usuario });
+
+                var id = await cmd.ExecuteScalarAsync();
+                return (id is long l) ? l : Convert.ToInt64(id);
+            }
+            catch (NpgsqlException ex)
+            {
+                // Puedes loguear el error o lanzar una excepción custom
+                throw new Exception("Error en la inserción de afiliación (PostgreSQL)", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error inesperado en InsertAfiliacionAsync", ex);
+            }
         }
+
 
         // =============== UPDATE ARCHIVOS ===================
         public async Task UpdateArchivosAsync(
@@ -245,5 +307,140 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
 
             await cmd.ExecuteNonQueryAsync();
         }
+
+        public async Task<IEnumerable<ListarEstadoCivil>> ListarEstadosCiviles(int idemppaisnegcue)
+        {
+            var resultados = new List<ListarEstadoCivil>();
+
+            const string sql = @"
+                                SELECT *
+                                FROM intranet.usp_getlistarestadosciviles(@idemppaisnegcue);";
+
+            try
+            {
+                await using var cn = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+                await cn.OpenAsync();
+
+                await using var cmd = new NpgsqlCommand(sql, cn);
+                cmd.Parameters.AddWithValue("@idemppaisnegcue", (object)idemppaisnegcue ?? DBNull.Value);
+
+                await using var rd = await cmd.ExecuteReaderAsync();
+                while (await rd.ReadAsync())
+                {
+                    var item = new ListarEstadoCivil
+                    {
+                        idestadocivil = GetInt(rd, "idestadocivil"),
+                        nombreestadocivil = GetString(rd, "nombreestadocivil"),
+                        idemppaisnegcue = GetInt(rd, "idemppaisnegcue"),
+                        estado = GetInt(rd, "estado")
+                    };
+
+                    resultados.Add(item);
+                }
+            }
+            catch (NpgsqlException npgEx)
+            {
+                throw new ApplicationException("Error de base de datos al listar estados civiles.", npgEx);
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error inesperado al listar estados civiles.", ex);
+            }
+
+            return resultados;
+        }
+
+        public async Task<IEnumerable<ListarTipoDocumento>> ListarTiposDocumento(int idemppaisnegcue)
+        {
+            var resultados = new List<ListarTipoDocumento>();
+
+            const string sql = @"
+                                SELECT *
+                                FROM intranet.usp_getlistartipodocumentos(@idemppaisnegcue);";
+
+            try
+            {
+                await using var cn = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+                await cn.OpenAsync();
+
+                await using var cmd = new NpgsqlCommand(sql, cn);
+                cmd.Parameters.AddWithValue("@idemppaisnegcue", (object)idemppaisnegcue ?? DBNull.Value);
+
+                await using var rd = await cmd.ExecuteReaderAsync();
+                while (await rd.ReadAsync())
+                {
+                    var item = new ListarTipoDocumento
+                    {
+                        idtipodocumento = rd["idtipodocumento"] == DBNull.Value ? 0 : Convert.ToInt32(rd["idtipodocumento"]),
+                        nombretipodocumento = rd["nombretipodocumento"] == DBNull.Value ? null : rd["nombretipodocumento"].ToString(),
+                        abreviatura = rd["abreviatura"] == DBNull.Value ? null : rd["abreviatura"].ToString(),
+                        idemppaisnegcue = rd["idemppaisnegcue"] == DBNull.Value ? 0 : Convert.ToInt32(rd["idemppaisnegcue"]),
+                        estado = rd["estado"] == DBNull.Value ? 0 : Convert.ToInt32(rd["estado"])
+                    };
+                    resultados.Add(item);
+                }
+            }
+            catch (NpgsqlException npgEx)
+            {
+                throw new ApplicationException("Error de base de datos al listar tipos de documento.", npgEx);
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error inesperado al listar tipos de documento.", ex);
+            }
+
+            return resultados;
+        }
+
+        public async Task<RespuestaAfiliacionDesactivar> PostDesactivarAfiliacion(FiltroAfiliacionDesactivar filtro)
+        {
+            const string sql = @"
+                        SELECT *
+                        FROM intranet.usp_postdesactivarafiliacion(@idafiliacion, @usuarioanulacion);";
+
+            try
+            {
+                await using var cn = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+                await cn.OpenAsync();
+
+                await using var cmd = new NpgsqlCommand(sql, cn);
+                cmd.Parameters.AddWithValue("@idafiliacion", (object)filtro.idafiliacion ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@usuarioanulacion", (object)filtro.usuarioanulacion ?? DBNull.Value);
+
+                await using var rd = await cmd.ExecuteReaderAsync();
+
+                if (await rd.ReadAsync())
+                {
+                    return new RespuestaAfiliacionDesactivar
+                    {
+                        success = rd["success"] != DBNull.Value && Convert.ToBoolean(rd["success"]),
+                        message = rd["message"] == DBNull.Value ? null : rd["message"].ToString()
+                    };
+                }
+
+                return new RespuestaAfiliacionDesactivar
+                {
+                    success = false,
+                    message = "No se recibió respuesta de la base de datos"
+                };
+            }
+            catch (NpgsqlException npgEx)
+            {
+                return new RespuestaAfiliacionDesactivar
+                {
+                    success = false,
+                    message = $"Error de BD: {npgEx.Message}"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new RespuestaAfiliacionDesactivar
+                {
+                    success = false,
+                    message = $"Error inesperado: {ex.Message}"
+                };
+            }
+        }
+
     }
 }
