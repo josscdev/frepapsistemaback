@@ -350,6 +350,134 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
             return resultados;
         }
 
+
+        public async Task<AfiliacionReadDto?> GetAfiliacionByIdAsync(int idafiliacion)
+        {
+            const string sql = @"
+        SELECT
+            idafiliacion, numficha, idtipodocumento, docafiliado, nombres, apellidopaterno, apellidomaterno,
+            fechanacimiento, edadafiliado, sexo, idestadocivil, lugarnacimiento,
+            codubicacion, avenida, numero, urbanizacion,
+            celular, correo, observacionficha,
+            fechaafiliacion, estado,
+            fotoimg, fichaafiliacionpdf, hojadevidapdf
+        FROM intranet.afiliacion
+        WHERE idafiliacion = @id;";
+
+            await using var cn = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+            await cn.OpenAsync();
+
+            await using var cmd = new NpgsqlCommand(sql, cn);
+            cmd.Parameters.AddWithValue("@id", idafiliacion);
+
+            await using var rd = await cmd.ExecuteReaderAsync();
+            if (!await rd.ReadAsync()) return null;
+
+            string? ToYmd(object? o)
+                => (o is DateTime dt) ? dt.ToString("yyyy-MM-dd") : null;
+
+            return new AfiliacionReadDto
+            {
+                idafiliacion = rd.GetInt32(rd.GetOrdinal("idafiliacion")),
+                numficha = rd["numficha"] as string,
+                idtipodocumento = rd["idtipodocumento"] as int?,
+                docafiliado = rd["docafiliado"] as string,
+                nombres = rd["nombres"]?.ToString() ?? "",
+                apellidopaterno = rd["apellidopaterno"]?.ToString() ?? "",
+                apellidomaterno = rd["apellidomaterno"] as string,
+                fechanacimiento = ToYmd(rd["fechanacimiento"]),
+                edadafiliado = rd["edadafiliado"] as int?,
+                sexo = rd["sexo"] as string,
+                idestadocivil = rd["idestadocivil"] as int?,
+                lugarnacimiento = rd["lugarnacimiento"] as string,
+                codubicacion = rd["codubicacion"] as string,
+                avenida = rd["avenida"] as string,
+                numero = rd["numero"] as string,
+                urbanizacion = rd["urbanizacion"] as string,
+                telefono = rd["celular"] as string,
+                correo = rd["correo"] as string,
+                observacion = rd["observacionficha"] as string,
+                fechaafiliacion = ToYmd(rd["fechaafiliacion"]),
+                estado = (int)(rd["estado"] ?? 0),
+                fotoimg = rd["fotoimg"] as string,
+                fichaafiliacionpdf = rd["fichaafiliacionpdf"] as string,
+                hojadevidapdf = rd["hojadevidapdf"] as string
+            };
+        }
+
+        public async Task<int> UpdateAfiliacionAsync(int idafiliacion, AfiliacionUpdateDto dto, string usuario)
+        {
+            // Nota: hacemos SET de todas las columnas con COALESCE(@param, columna)
+            // así permites "partial update" sin sobreescribir con null.
+            const string sql = @"
+        UPDATE intranet.afiliacion
+        SET
+            numficha         = COALESCE(@numficha, numficha),
+            idtipodocumento  = COALESCE(@idtipodocumento, idtipodocumento),
+            docafiliado      = COALESCE(@docafiliado, docafiliado),
+            nombres          = COALESCE(@nombres, nombres),
+            apellidopaterno  = COALESCE(@apellidopaterno, apellidopaterno),
+            apellidomaterno  = COALESCE(@apellidomaterno, apellidomaterno),
+            fechanacimiento  = COALESCE(@fechanacimiento, fechanacimiento),
+            edadafiliado     = COALESCE(@edadafiliado, edadafiliado),
+            sexo             = COALESCE(@sexo, sexo),
+            idestadocivil    = COALESCE(@idestadocivil, idestadocivil),
+            lugarnacimiento  = COALESCE(@lugarnacimiento, lugarnacimiento),
+            codubicacion     = COALESCE(@codubicacion, codubicacion),
+            avenida          = COALESCE(@avenida, avenida),
+            numero           = COALESCE(@numero, numero),
+            urbanizacion     = COALESCE(@urbanizacion, urbanizacion),
+            celular          = COALESCE(@celular, celular),
+            correo           = COALESCE(@correo, correo),
+            observacionficha = COALESCE(@observacionficha, observacionficha),
+            fechaafiliacion  = COALESCE(@fechaafiliacion, fechaafiliacion),
+            estado           = COALESCE(@estado, estado),
+            usuariomodifica  = @usuariomodifica,
+            fechamodifica    = NOW()
+        WHERE idafiliacion = @id;";
+
+            static object DbNull(string? s) => string.IsNullOrWhiteSpace(s) ? DBNull.Value : s!;
+            static object DbNullInt(int? i) => i.HasValue ? i.Value : DBNull.Value;
+            static object DbNullDate(string? ymd)
+            {
+                if (string.IsNullOrWhiteSpace(ymd)) return DBNull.Value;
+                return DateTime.TryParse(ymd, out var dt) ? dt.Date : DBNull.Value;
+            }
+
+            var codubicacion = dto.dd ?? dto.pp ?? dto.rr;
+
+            await using var cn = new NpgsqlConnection(_dbConnection.GetConnectionROMBI());
+            await cn.OpenAsync();
+
+            await using var cmd = new NpgsqlCommand(sql, cn);
+            cmd.Parameters.AddWithValue("@id", idafiliacion);
+            cmd.Parameters.Add(new NpgsqlParameter("@numficha", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.numficha) });
+            cmd.Parameters.Add(new NpgsqlParameter("@idtipodocumento", NpgsqlDbType.Integer) { Value = DbNullInt(dto.idtipodocumento) });
+            cmd.Parameters.Add(new NpgsqlParameter("@docafiliado", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.docafiliado) });
+            cmd.Parameters.Add(new NpgsqlParameter("@nombres", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.nombres) });
+            cmd.Parameters.Add(new NpgsqlParameter("@apellidopaterno", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.apellidopaterno) });
+            cmd.Parameters.Add(new NpgsqlParameter("@apellidomaterno", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.apellidomaterno) });
+            cmd.Parameters.Add(new NpgsqlParameter("@fechanacimiento", NpgsqlDbType.Date) { Value = DbNullDate(dto.fechanacimiento) });
+            cmd.Parameters.Add(new NpgsqlParameter("@edadafiliado", NpgsqlDbType.Integer) { Value = DbNullInt(dto.edadafiliado) });
+            cmd.Parameters.Add(new NpgsqlParameter("@sexo", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.sexo) });
+            cmd.Parameters.Add(new NpgsqlParameter("@idestadocivil", NpgsqlDbType.Integer) { Value = DbNullInt(dto.idestadocivil) });
+            cmd.Parameters.Add(new NpgsqlParameter("@lugarnacimiento", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.lugarnacimiento) });
+            cmd.Parameters.Add(new NpgsqlParameter("@codubicacion", NpgsqlDbType.Varchar) { Value = (object)DbNull(codubicacion) });
+            cmd.Parameters.Add(new NpgsqlParameter("@avenida", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.avenida) });
+            cmd.Parameters.Add(new NpgsqlParameter("@numero", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.numero) });
+            cmd.Parameters.Add(new NpgsqlParameter("@urbanizacion", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.urbanizacion) });
+            cmd.Parameters.Add(new NpgsqlParameter("@celular", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.telefono) });
+            cmd.Parameters.Add(new NpgsqlParameter("@correo", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.correo) });
+            cmd.Parameters.Add(new NpgsqlParameter("@observacionficha", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.observacion) });
+            cmd.Parameters.Add(new NpgsqlParameter("@fechaafiliacion", NpgsqlDbType.Date) { Value = DbNullDate(dto.fechaafiliacion) });
+            cmd.Parameters.Add(new NpgsqlParameter("@estado", NpgsqlDbType.Integer) { Value = DbNullInt(dto.estado) });
+            cmd.Parameters.Add(new NpgsqlParameter("@usuariomodifica", NpgsqlDbType.Varchar) { Value = usuario });
+
+            var rows = await cmd.ExecuteNonQueryAsync();
+            return rows; // 0 o 1
+        }
+
+
         public async Task<IEnumerable<ListarTipoDocumento>> ListarTiposDocumento(int idemppaisnegcue)
         {
             var resultados = new List<ListarTipoDocumento>();

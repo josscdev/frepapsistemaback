@@ -109,6 +109,7 @@ namespace RombiBack.Services.ROM.FREPAPMODULE.MODULOREGISTROS
             return fileName;
         }
 
+
         public async Task<IEnumerable<ListarEstadoCivil>> ListarEstadosCiviles(int idemppaisnegcue)
         {
             return await _afiliacionesRepository.ListarEstadosCiviles(idemppaisnegcue);
@@ -123,5 +124,52 @@ namespace RombiBack.Services.ROM.FREPAPMODULE.MODULOREGISTROS
         {
             return await _afiliacionesRepository.PostDesactivarAfiliacion(request);
         }
+
+        public async Task<AfiliacionReadDto?> GetAfiliacionById(int idafiliacion)
+    => await _afiliacionesRepository.GetAfiliacionByIdAsync(idafiliacion);
+
+        public async Task<RegistrarAfiliacionResult> ActualizarAfiliacion(
+            int idafiliacion,
+            AfiliacionUpdateDto model,
+            IFormFile? foto,
+            IFormFile? fichaafiliacionfile,
+            IFormFile? hojadevida,
+            IFormFile? copiadocumento // futuro
+        )
+        {
+            var usuario = "system"; // o del contexto
+
+            // 1) Actualiza campos base
+            var rows = await _afiliacionesRepository.UpdateAfiliacionAsync(idafiliacion, model, usuario);
+            if (rows == 0)
+                return new RegistrarAfiliacionResult { Ok = false, Error = "No existe el idafiliacion indicado." };
+
+            // 2) Guarda archivos nuevos (si vienen) y actualiza paths
+            string? pathFoto = null;
+            string? pathFicha = null;
+            string? pathHv = null;
+
+            if (foto != null)
+                pathFoto = await SaveToFolder(foto, Path.Combine(Root, "Foto"), $"FOTO_{idafiliacion}", ImageTypes, MaxImageKB * 1024);
+
+            if (fichaafiliacionfile != null)
+                pathFicha = await SaveToFolder(fichaafiliacionfile, Path.Combine(Root, "FichaAfiliado"), $"FICHA_{idafiliacion}", PdfTypes, MaxPdfMB * 1024 * 1024);
+
+            if (hojadevida != null)
+                pathHv = await SaveToFolder(hojadevida, Path.Combine(Root, "HojaVida"), $"HV_{idafiliacion}", PdfTypes, MaxPdfMB * 1024 * 1024);
+
+            await _afiliacionesRepository.UpdateArchivosAsync(idafiliacion, pathFoto, pathFicha, pathHv);
+
+            var saved = new Dictionary<string, string?>
+            {
+                ["fotoimg"] = pathFoto,
+                ["fichaafiliacionpdf"] = pathFicha,
+                ["hojadevidapdf"] = pathHv
+            };
+
+            return new RegistrarAfiliacionResult { Ok = true, Files = saved };
+        }
+
+
     }
 }

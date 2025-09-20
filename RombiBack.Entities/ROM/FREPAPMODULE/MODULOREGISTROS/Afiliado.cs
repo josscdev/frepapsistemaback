@@ -168,4 +168,69 @@ namespace RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS
         public bool success { get; set; }
         public string? message { get; set; }
     }
+
+
+    public  class AfiliacionReadDto
+    {
+        public int idafiliacion { get; set; }
+        public string? numficha { get; set; }
+        public int? idtipodocumento { get; set; }
+        public string? docafiliado { get; set; }
+        public string nombres { get; set; } = null!;
+        public string apellidopaterno { get; set; } = null!;
+        public string? apellidomaterno { get; set; }
+        public string? fechanacimiento { get; set; } // yyyy-MM-dd (para frontend)
+        public int? edadafiliado { get; set; }
+        public string? sexo { get; set; }
+        public int? idestadocivil { get; set; }
+        public string? lugarnacimiento { get; set; }
+        public string? codubicacion { get; set; } // dd || pp || rr (como lo guardaste)
+        public string? avenida { get; set; }
+        public string? numero { get; set; }
+        public string? urbanizacion { get; set; }
+        public string? telefono { get; set; }
+        public string? correo { get; set; }
+        public string? observacion { get; set; }
+        public string? fechaafiliacion { get; set; } // yyyy-MM-dd
+        public int estado { get; set; }
+        public string? fotoimg { get; set; }
+        public string? fichaafiliacionpdf { get; set; }
+        public string? hojadevidapdf { get; set; }
+    }
+
+    public  class AfiliacionUpdateDto
+    {
+        public string? numficha { get; set; }
+        public int? idtipodocumento { get; set; }
+        public string? docafiliado { get; set; }
+        public string? nombres { get; set; }
+        public string? apellidopaterno { get; set; }
+        public string? apellidomaterno { get; set; }
+        public string? fechanacimiento { get; set; }  // yyyy-MM-dd
+        public int? edadafiliado { get; set; }
+        public string? sexo { get; set; }
+        public int? idestadocivil { get; set; }
+        public string? lugarnacimiento { get; set; }
+        public string? rr { get; set; }
+        public string? pp { get; set; }
+        public string? dd { get; set; }
+        public string? avenida { get; set; }
+        public string? numero { get; set; }
+        public string? urbanizacion { get; set; }
+        public string? telefono { get; set; }
+        public string? correo { get; set; }
+        public string? observacion { get; set; }
+        public string? fechaafiliacion { get; set; }  // yyyy-MM-dd
+        public int? estado { get; set; }
+    }
+
+    // Para binder [FromForm] del PUT con archivos
+    public  class AfiliacionUpdateForm : AfiliacionUpdateDto
+    {
+        public IFormFile? foto { get; set; }
+        public IFormFile? fichaafiliacionfile { get; set; }
+        public IFormFile? hojadevida { get; set; }
+        public IFormFile? copiadocumento { get; set; } // si luego agregas columna
+    }
+
 }

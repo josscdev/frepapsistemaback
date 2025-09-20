@@ -21,6 +21,11 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
         // string? copiadocumentopdf // si creas esta columna, descomenta
         );
 
+        Task<AfiliacionReadDto?> GetAfiliacionByIdAsync(int idafiliacion);
+
+        Task<int> UpdateAfiliacionAsync(int idafiliacion, AfiliacionUpdateDto dto, string usuario);
+
+
         Task<IEnumerable<ListarEstadoCivil>> ListarEstadosCiviles(int idemppaisnegcue);
         Task<IEnumerable<ListarTipoDocumento>> ListarTiposDocumento(int idemppaisnegcue);
         Task<RespuestaAfiliacionDesactivar> PostDesactivarAfiliacion(FiltroAfiliacionDesactivar request);

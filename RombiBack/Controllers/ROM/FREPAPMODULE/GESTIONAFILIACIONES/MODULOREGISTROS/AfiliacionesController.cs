@@ -73,6 +73,62 @@ namespace RombiBack.Controllers.ROM.FREPAPMODULE.GESTIONAFILIACIONES.MODULOREGIS
 
             return Ok(res);
         }
+        // === GET BY ID ===
+        [HttpPost("getById")]
+        public async Task<IActionResult> GetById([FromBody] int id)
+        {
+            var dto = await _afiliacionesServices.GetAfiliacionById(id);
+            if (dto == null) return NotFound(new { message = "No existe la afiliación." });
+            return Ok(dto);
+        }
+
+
+
+        // === UPDATE TOTAL (DATOS + ARCHIVOS) vía POST, id separado en la ruta ===
+        [HttpPost("update/{id:int}")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Update(
+            [FromRoute] int id,
+            [FromForm] AfiliacionUpdateForm form
+        )
+        {
+            var res = await _afiliacionesServices.ActualizarAfiliacion(
+                id,
+                new AfiliacionUpdateDto
+                {
+                    numficha = form.numficha,
+                    idtipodocumento = form.idtipodocumento,
+                    docafiliado = form.docafiliado,
+                    nombres = form.nombres,
+                    apellidopaterno = form.apellidopaterno,
+                    apellidomaterno = form.apellidomaterno,
+                    fechanacimiento = form.fechanacimiento,
+                    edadafiliado = form.edadafiliado,
+                    sexo = form.sexo,
+                    idestadocivil = form.idestadocivil,
+                    lugarnacimiento = form.lugarnacimiento,
+                    rr = form.rr,
+                    pp = form.pp,
+                    dd = form.dd,
+                    avenida = form.avenida,
+                    numero = form.numero,
+                    urbanizacion = form.urbanizacion,
+                    telefono = form.telefono,
+                    correo = form.correo,
+                    observacion = form.observacion,
+                    fechaafiliacion = form.fechaafiliacion,
+                    estado = form.estado
+                },
+                form.foto,
+                form.fichaafiliacionfile,
+                form.hojadevida,
+                form.copiadocumento
+            );
+
+            if (!res.Ok) return BadRequest(res);
+            return Ok(res);
+        }
+
 
         [HttpGet("GetListarEstadosCiviles")]
         public async Task<IActionResult> GetListarEstadosCiviles([FromQuery] int idemppaisnegcue)
