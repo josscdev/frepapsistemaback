@@ -373,8 +373,35 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
             await using var rd = await cmd.ExecuteReaderAsync();
             if (!await rd.ReadAsync()) return null;
 
-            string? ToYmd(object? o)
-                => (o is DateTime dt) ? dt.ToString("yyyy-MM-dd") : null;
+            string? ToYmd(object? o) => (o is DateTime dt) ? dt.ToString("yyyy-MM-dd") : null;
+
+            // 👉 helper local para convertir archivos a data URI
+            static string? ToDataUri(string? path)
+            {
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path)) return null;
+
+                    var bytes = System.IO.File.ReadAllBytes(path);
+                    var ext = Path.GetExtension(path).ToLowerInvariant();
+
+                    var mime = ext switch
+                    {
+                        ".jpg" or ".jpeg" => "image/jpeg",
+                        ".png" => "image/png",
+                        ".webp" => "image/webp",
+                        ".gif" => "image/gif",
+                        ".pdf" => "application/pdf",
+                        _ => "application/octet-stream"
+                    };
+
+                    return $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
+                }
+                catch
+                {
+                    return null;
+                }
+            }
 
             return new AfiliacionReadDto
             {
@@ -399,16 +426,17 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
                 observacion = rd["observacionficha"] as string,
                 fechaafiliacion = ToYmd(rd["fechaafiliacion"]),
                 estado = (int)(rd["estado"] ?? 0),
-                fotoimg = rd["fotoimg"] as string,
-                fichaafiliacionpdf = rd["fichaafiliacionpdf"] as string,
-                hojadevidapdf = rd["hojadevidapdf"] as string
+
+                // 👉 Aquí la conversión a base64
+                fotoimg = ToDataUri(rd["fotoimg"] as string),
+                fichaafiliacionpdf = ToDataUri(rd["fichaafiliacionpdf"] as string),
+                hojadevidapdf = ToDataUri(rd["hojadevidapdf"] as string)
             };
         }
 
+
         public async Task<int> UpdateAfiliacionAsync(int idafiliacion, AfiliacionUpdateDto dto, string usuario)
         {
-            // Nota: hacemos SET de todas las columnas con COALESCE(@param, columna)
-            // así permites "partial update" sin sobreescribir con null.
             const string sql = @"
         UPDATE intranet.afiliacion
         SET
@@ -432,17 +460,16 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
             observacionficha = COALESCE(@observacionficha, observacionficha),
             fechaafiliacion  = COALESCE(@fechaafiliacion, fechaafiliacion),
             estado           = COALESCE(@estado, estado),
-            usuariomodifica  = @usuariomodifica,
-            fechamodifica    = NOW()
+            -- 👇 nombres correctos de columnas:
+            usuariomodificacion = @usuario,
+            fechamodificacion   = NOW()
         WHERE idafiliacion = @id;";
 
             static object DbNull(string? s) => string.IsNullOrWhiteSpace(s) ? DBNull.Value : s!;
             static object DbNullInt(int? i) => i.HasValue ? i.Value : DBNull.Value;
             static object DbNullDate(string? ymd)
-            {
-                if (string.IsNullOrWhiteSpace(ymd)) return DBNull.Value;
-                return DateTime.TryParse(ymd, out var dt) ? dt.Date : DBNull.Value;
-            }
+                => string.IsNullOrWhiteSpace(ymd) ? DBNull.Value
+                   : (DateTime.TryParse(ymd, out var dt) ? dt.Date : DBNull.Value);
 
             var codubicacion = dto.dd ?? dto.pp ?? dto.rr;
 
@@ -451,31 +478,32 @@ namespace RombiBack.Repository.ROM.FREPAPMODULE.MODULOREGISTROS
 
             await using var cmd = new NpgsqlCommand(sql, cn);
             cmd.Parameters.AddWithValue("@id", idafiliacion);
-            cmd.Parameters.Add(new NpgsqlParameter("@numficha", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.numficha) });
+            cmd.Parameters.Add(new NpgsqlParameter("@numficha", NpgsqlDbType.Varchar) { Value = DbNull(dto.numficha) });
             cmd.Parameters.Add(new NpgsqlParameter("@idtipodocumento", NpgsqlDbType.Integer) { Value = DbNullInt(dto.idtipodocumento) });
-            cmd.Parameters.Add(new NpgsqlParameter("@docafiliado", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.docafiliado) });
-            cmd.Parameters.Add(new NpgsqlParameter("@nombres", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.nombres) });
-            cmd.Parameters.Add(new NpgsqlParameter("@apellidopaterno", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.apellidopaterno) });
-            cmd.Parameters.Add(new NpgsqlParameter("@apellidomaterno", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.apellidomaterno) });
+            cmd.Parameters.Add(new NpgsqlParameter("@docafiliado", NpgsqlDbType.Varchar) { Value = DbNull(dto.docafiliado) });
+            cmd.Parameters.Add(new NpgsqlParameter("@nombres", NpgsqlDbType.Varchar) { Value = DbNull(dto.nombres) });
+            cmd.Parameters.Add(new NpgsqlParameter("@apellidopaterno", NpgsqlDbType.Varchar) { Value = DbNull(dto.apellidopaterno) });
+            cmd.Parameters.Add(new NpgsqlParameter("@apellidomaterno", NpgsqlDbType.Varchar) { Value = DbNull(dto.apellidomaterno) });
             cmd.Parameters.Add(new NpgsqlParameter("@fechanacimiento", NpgsqlDbType.Date) { Value = DbNullDate(dto.fechanacimiento) });
             cmd.Parameters.Add(new NpgsqlParameter("@edadafiliado", NpgsqlDbType.Integer) { Value = DbNullInt(dto.edadafiliado) });
-            cmd.Parameters.Add(new NpgsqlParameter("@sexo", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.sexo) });
+            cmd.Parameters.Add(new NpgsqlParameter("@sexo", NpgsqlDbType.Varchar) { Value = DbNull(dto.sexo) });
             cmd.Parameters.Add(new NpgsqlParameter("@idestadocivil", NpgsqlDbType.Integer) { Value = DbNullInt(dto.idestadocivil) });
-            cmd.Parameters.Add(new NpgsqlParameter("@lugarnacimiento", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.lugarnacimiento) });
-            cmd.Parameters.Add(new NpgsqlParameter("@codubicacion", NpgsqlDbType.Varchar) { Value = (object)DbNull(codubicacion) });
-            cmd.Parameters.Add(new NpgsqlParameter("@avenida", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.avenida) });
-            cmd.Parameters.Add(new NpgsqlParameter("@numero", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.numero) });
-            cmd.Parameters.Add(new NpgsqlParameter("@urbanizacion", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.urbanizacion) });
-            cmd.Parameters.Add(new NpgsqlParameter("@celular", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.telefono) });
-            cmd.Parameters.Add(new NpgsqlParameter("@correo", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.correo) });
-            cmd.Parameters.Add(new NpgsqlParameter("@observacionficha", NpgsqlDbType.Varchar) { Value = (object)DbNull(dto.observacion) });
+            cmd.Parameters.Add(new NpgsqlParameter("@lugarnacimiento", NpgsqlDbType.Varchar) { Value = DbNull(dto.lugarnacimiento) });
+            cmd.Parameters.Add(new NpgsqlParameter("@codubicacion", NpgsqlDbType.Varchar) { Value = DbNull(codubicacion) });
+            cmd.Parameters.Add(new NpgsqlParameter("@avenida", NpgsqlDbType.Varchar) { Value = DbNull(dto.avenida) });
+            cmd.Parameters.Add(new NpgsqlParameter("@numero", NpgsqlDbType.Varchar) { Value = DbNull(dto.numero) });
+            cmd.Parameters.Add(new NpgsqlParameter("@urbanizacion", NpgsqlDbType.Varchar) { Value = DbNull(dto.urbanizacion) });
+            cmd.Parameters.Add(new NpgsqlParameter("@celular", NpgsqlDbType.Varchar) { Value = DbNull(dto.telefono) });
+            cmd.Parameters.Add(new NpgsqlParameter("@correo", NpgsqlDbType.Varchar) { Value = DbNull(dto.correo) });
+            cmd.Parameters.Add(new NpgsqlParameter("@observacionficha", NpgsqlDbType.Varchar) { Value = DbNull(dto.observacion) });
             cmd.Parameters.Add(new NpgsqlParameter("@fechaafiliacion", NpgsqlDbType.Date) { Value = DbNullDate(dto.fechaafiliacion) });
             cmd.Parameters.Add(new NpgsqlParameter("@estado", NpgsqlDbType.Integer) { Value = DbNullInt(dto.estado) });
-            cmd.Parameters.Add(new NpgsqlParameter("@usuariomodifica", NpgsqlDbType.Varchar) { Value = usuario });
+            cmd.Parameters.AddWithValue("@usuario", usuario);
 
             var rows = await cmd.ExecuteNonQueryAsync();
-            return rows; // 0 o 1
+            return rows;
         }
+
 
 
         public async Task<IEnumerable<ListarTipoDocumento>> ListarTiposDocumento(int idemppaisnegcue)
