@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS;
@@ -23,6 +24,7 @@ namespace RombiBack.Controllers.ROM.FREPAPMODULE.GESTIONAFILIACIONES.MODULOREGIS
             _afiliacionesServices = afiliacionesServices;
         }
 
+        [Authorize]
         [HttpPost("GetListarAfiliaciones")]
         public async Task<ActionResult<IEnumerable<ListarAfiliacion>>> ListarAfiliaciones([FromBody] FiltroAfiliacion filtro)
         {
@@ -31,11 +33,12 @@ namespace RombiBack.Controllers.ROM.FREPAPMODULE.GESTIONAFILIACIONES.MODULOREGIS
         }
 
 
-       
+        [Authorize]
         [HttpPost("GetListarUbigeos")]
         public async Task<ActionResult<IEnumerable<ListarOpcionUbigeo>>> Listar([FromBody] FiltroUbigeo f)
         => Ok(await _afiliacionesServices.ListarUbigeos(f.idemppaisnegcue, f.pais));
 
+        [Authorize]
         [HttpPost("registrarafiliacion")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Registrar([FromForm] RegistrarAfiliacionForm form)
@@ -67,13 +70,16 @@ namespace RombiBack.Controllers.ROM.FREPAPMODULE.GESTIONAFILIACIONES.MODULOREGIS
                     correo = form.correo,
                     estado_text = form.estado_text,
                     estado = form.estado,
-                    observacion = form.observacion
+                    observacion = form.observacion,
+                    usuario_creacion = form.usuario_creacion
                 },
                 form.foto, form.fichaafiliacionfile, form.hojadevida, form.copiadocumento);
 
             return Ok(res);
         }
+
         // === GET BY ID ===
+        [Authorize]
         [HttpPost("getById")]
         public async Task<IActionResult> GetById([FromBody] int id)
         {
@@ -81,8 +87,6 @@ namespace RombiBack.Controllers.ROM.FREPAPMODULE.GESTIONAFILIACIONES.MODULOREGIS
             if (dto == null) return NotFound(new { message = "No existe la afiliación." });
             return Ok(dto);
         }
-
-
 
         // === UPDATE TOTAL (DATOS + ARCHIVOS) vía POST, id separado en la ruta ===
         [HttpPost("update/{id:int}")]
@@ -129,7 +133,7 @@ namespace RombiBack.Controllers.ROM.FREPAPMODULE.GESTIONAFILIACIONES.MODULOREGIS
             return Ok(res);
         }
 
-
+        [Authorize]
         [HttpGet("GetListarEstadosCiviles")]
         public async Task<IActionResult> GetListarEstadosCiviles([FromQuery] int idemppaisnegcue)
         {
@@ -145,6 +149,7 @@ namespace RombiBack.Controllers.ROM.FREPAPMODULE.GESTIONAFILIACIONES.MODULOREGIS
             }
         }
 
+        [Authorize]
         [HttpGet("GetListarTiposDocumento")]
         public async Task<IActionResult> GetListarTiposDocumento([FromQuery] int idemppaisnegcue)
         {
@@ -160,6 +165,7 @@ namespace RombiBack.Controllers.ROM.FREPAPMODULE.GESTIONAFILIACIONES.MODULOREGIS
             }
         }
 
+        [Authorize]
         [HttpPost("PostDesactivarAfiliacion")]
         public async Task<IActionResult> PostDesactivarAfiliacion([FromBody] FiltroAfiliacionDesactivar request)
         {

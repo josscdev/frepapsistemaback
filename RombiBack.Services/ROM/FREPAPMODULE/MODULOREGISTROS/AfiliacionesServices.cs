@@ -44,10 +44,10 @@ namespace RombiBack.Services.ROM.FREPAPMODULE.MODULOREGISTROS
             IFormFile? copiadocumento // si luego creas columna en BD, la agregamos al update
         )
         {
-            var usuario = "system"; // o el usuario real del contexto
+            var usuario = model.usuario_creacion; // o el usuario real del contexto
 
             // 1) Insertar afiliación y obtener ID
-            var idafiliacion = await _afiliacionesRepository.InsertAfiliacionAsync(model, usuario);
+            var idafiliacion = await _afiliacionesRepository.InsertAfiliacionAsync(model, usuario!);
 
             // 2) Guardar archivos físicamente y capturar rutas
             string? pathFoto = null;

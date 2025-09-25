@@ -103,6 +103,7 @@ namespace RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS
         public string? estado_text { get; set; } = "ACTIVO";
         public int? estado { get; set; }
         public string? observacion { get; set; }
+        public string? usuario_creacion { get; set; }
     }
 
     public class RegistrarAfiliacionForm
@@ -132,6 +133,7 @@ namespace RombiBack.Entities.ROM.FREPAPMODULE.MODULOREGISTROS
         public string? estado_text { get; set; } = "ACTIVO";
         public int? estado { get; set; }
         public string? observacion { get; set; }
+        public string ? usuario_creacion { get; set; }
 
         // === Archivos ===
         public IFormFile? foto { get; set; }
